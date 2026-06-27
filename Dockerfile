@@ -78,12 +78,15 @@ ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} \
 # next build`. Fails the image if the tree is not typecheck/lint clean.
 RUN npm run build
 
-# Drop devDependencies from node_modules for the runtime image. `tsx` is a
-# devDependency the worker needs at runtime, so re-add it (+ its peer) explicitly
-# after pruning. `cross-env` is only used by build/start scripts; the runtime
-# commands below call node/tsx directly so it is not required at runtime.
+# Drop devDependencies from node_modules for the runtime image, then re-add the
+# devDeps the RUNTIME still needs (they are not in `dependencies`):
+#   * `tsx`        — the worker runs `tsx scripts/workflow-worker.ts`.
+#   * `typescript` — `server.js` boots Next, which loads `next.config.ts` (a TS
+#     config) and transpiles it ON STARTUP; without `typescript` present Next
+#     tries to auto-install it at boot and crashes (offline / behind a TLS proxy).
+# `cross-env` is only a build/start-script helper; runtime calls node/tsx directly.
 RUN npm prune --omit=dev \
-  && npm install --no-save tsx@^4.22.3
+  && npm install --no-save tsx@^4.22.3 typescript@^5.8.2
 
 # -----------------------------------------------------------------------------
 # Stage 3 — runner: lean runtime with ffmpeg.
