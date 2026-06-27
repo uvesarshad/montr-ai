@@ -36,7 +36,10 @@ RUN apt-get update \
 COPY package.json package-lock.json* ./
 # Full install (devDeps included): the build needs `cross-env`, `tsx`,
 # `typescript`, `tailwindcss`, `postcss`; the worker needs `tsx` at runtime.
-RUN npm ci
+# `--include=dev` is explicit so devDeps install even if the host/CI environment
+# has NODE_ENV=production (which would otherwise make npm omit them → the build
+# script's `cross-env` goes missing and `npm run build` fails 127).
+RUN npm ci --include=dev
 
 # -----------------------------------------------------------------------------
 # Stage 2 — builder: produce the production Next.js build.
