@@ -1,0 +1,123 @@
+/* Agent shell styling — keyframes, specialist badge colors, scrollbars.
+   Visual system mirrors dashboard-mockup.html, layout follows Helena 3-col. */
+
+@keyframes agentBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes agentPulseRing {
+  0%, 100% {
+    box-shadow:
+      0 2px 12px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      0 0 0 0 rgba(123, 92, 240, 0.4);
+  }
+  50% {
+    box-shadow:
+      0 2px 12px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      0 0 0 6px rgba(123, 92, 240, 0);
+  }
+}
+
+.blink {
+  animation: agentBlink 1.8s ease-in-out infinite;
+}
+
+.alertCard {
+  border-left: 3px solid #7B5CF0;
+  background: linear-gradient(135deg, #F5F3FF, rgba(255, 255, 255, 0.8));
+  animation: agentPulseRing 2.4s ease-in-out infinite;
+}
+
+:global(.dark) .alertCard {
+  background: linear-gradient(135deg, rgba(123, 92, 240, 0.18), rgba(16, 16, 26, 0.78));
+}
+
+.planCard {
+  border-left: 3px solid #7B5CF0;
+}
+
+.planHeaderBg {
+  background: linear-gradient(135deg, #F5F3FF, transparent);
+}
+
+:global(.dark) .planHeaderBg {
+  background: linear-gradient(135deg, rgba(123, 92, 240, 0.12), transparent);
+}
+
+.progressFill {
+  background: linear-gradient(90deg, #7B5CF0, #A78BFA);
+}
+
+.gradientButton {
+  background: linear-gradient(135deg, #8B6CF8, #6B3EEC);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(123, 92, 240, 0.35);
+  transition: box-shadow 0.15s;
+}
+
+.gradientButton:hover {
+  box-shadow: 0 3px 10px rgba(123, 92, 240, 0.45);
+}
+
+/* Specialist badges — match dashboard semantic palette */
+.specMarketing { background: #FDF2F8; color: #DB2777; border: 1px solid #FBCFE8; }
+.specSocial    { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+.specCrm       { background: #FFF7ED; color: #EA580C; border: 1px solid #FED7AA; }
+.specKnowledge { background: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+.specAutomation{ background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
+.specGeneral   { background: #F5F3FF; color: #7B5CF0; border: 1px solid #DDD6FE; }
+
+:global(.dark) .specMarketing { background: rgba(219, 39, 119, 0.12); color: #F472B6; border-color: rgba(219, 39, 119, 0.25); }
+:global(.dark) .specSocial    { background: rgba(37, 99, 235, 0.12);  color: #60A5FA; border-color: rgba(37, 99, 235, 0.25); }
+:global(.dark) .specCrm       { background: rgba(234, 88, 12, 0.12);  color: #FB923C; border-color: rgba(234, 88, 12, 0.25); }
+:global(.dark) .specKnowledge { background: rgba(22, 163, 74, 0.12);  color: #4ADE80; border-color: rgba(22, 163, 74, 0.25); }
+:global(.dark) .specAutomation{ background: rgba(217, 119, 6, 0.12);  color: #FBBF24; border-color: rgba(217, 119, 6, 0.25); }
+:global(.dark) .specGeneral   { background: rgba(123, 92, 240, 0.18); color: #A78BFA; border-color: rgba(123, 92, 240, 0.3); }
+
+/* Status dots */
+.dotLive  { background: #16A34A; }
+.dotWait  { background: #D97706; }
+.dotSched { background: #2563EB; }
+.dotDone  { background: #9FA0B5; }
+
+/* Slim scrollbars on rails and stream */
+.slimScroll::-webkit-scrollbar { width: 5px; }
+.slimScroll::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); border-radius: 3px; }
+.slimScroll::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.2); }
+:global(.dark) .slimScroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); }
+:global(.dark) .slimScroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+
+.railFrame {
+  background: rgba(216, 217, 230, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+:global(.dark) .railFrame {
+  background: rgba(12, 12, 24, 0.6);
+}
+
+.contextRailFrame {
+  background: rgba(216, 217, 230, 0.4);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+:global(.dark) .contextRailFrame {
+  background: rgba(12, 12, 24, 0.5);
+}
+
+/* Mission item active accent bar */
+.missionItemActive::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  background: #7B5CF0;
+  border-radius: 0 2px 2px 0;
+}

@@ -1,0 +1,67 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+.genkit/*
+.env*
+
+*.txt
+*.log
+*.md
+!README.md
+!AI_MODEL_GUIDE.md
+nul
+
+/.claude
+/temp
+!/docs/*/*.md 
+!/docs/*
+!knowledge-base/*/*.md 
+!knowledge-base/*
+
+.gstack/
+
+# Obsidian vault config (docs/ is opened as a vault)
+docs/.obsidian/
+
+# Large voice ML model (lazy-downloaded + sha256-verified at runtime; prefetch
+# with `npm run download-voice-models`). Tokenizer + small assets ARE committed.
+src/lib/voice/ai/turn/models/model_q8.onnx
+
+# OSS public assets (re-included over global ignore / .env*)
+!.env.example

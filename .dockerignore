@@ -1,0 +1,51 @@
+# Build context exclusions for the MontrAI self-host image.
+# Keep the context small + never leak local secrets or scratch into the image.
+
+# Dependencies + build output (reinstalled/rebuilt inside the image)
+node_modules
+.next
+out
+build
+dist
+
+# Secrets — NEVER copy any local env into the image. The container reads env at
+# runtime via docker-compose `env_file: .env`. (.env.example is the only env
+# file allowed in git; exclude all real ones here regardless.)
+.env
+.env.*
+!.env.example
+
+# VCS + history
+.git
+.gitignore
+.gitattributes
+
+# Scratch / vendored clones / planning docs (not source of truth)
+temp
+docs/plan
+
+# Tooling caches + local config
+.vscode
+.idea
+.claude
+.cache
+.turbo
+coverage
+*.log
+npm-debug.log*
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Tests / CI artifacts not needed at build time
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+.github
+
+# Docker meta (don't recurse our own compose/Dockerfile into context layers)
+Dockerfile
+docker-compose.yml
+.dockerignore

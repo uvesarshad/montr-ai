@@ -1,0 +1,588 @@
+/* ── AI Studio – dashboard-inspired page styles ─────────────────────────── */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+}
+
+/* ── Status bar ─────────────────────────────────────────────────────────── */
+.statusBar {
+  overflow: hidden;
+  border-radius: 10px;
+  border-left: 3px solid hsl(var(--primary));
+}
+
+.statusBarText { border-left-color: #0ea5e9; }
+.statusBarImage { border-left-color: #d946ef; }
+.statusBarVideo { border-left-color: #f59e0b; }
+.statusBarAudio { border-left-color: #10b981; }
+.statusBarCharacter { border-left-color: #f43f5e; }
+.statusBarSoon { border-left-color: var(--app-border-hover); }
+
+.statusHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--app-border);
+  background: linear-gradient(135deg, rgba(123, 92, 240, 0.07), transparent);
+}
+
+.statusStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.statusStatCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 14px;
+  border-right: 1px solid var(--app-border);
+}
+
+.statusStatCell:last-child {
+  border-right: none;
+}
+
+.statusStatValue {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  color: hsl(var(--foreground));
+}
+
+.statusStatLabel {
+  font-size: 10.5px;
+  color: var(--app-text-muted);
+}
+
+/* ── Live pill ──────────────────────────────────────────────────────────── */
+.livePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(22, 163, 74, 0.22);
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.soonPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.pillText {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Section name / sub ─────────────────────────────────────────────────── */
+.sectionName {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.sectionSub {
+  font-size: 11.5px;
+  color: var(--app-text-muted);
+}
+
+/* ── Link ───────────────────────────────────────────────────────────────── */
+.link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: hsl(var(--primary));
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+  opacity: 0.82;
+}
+
+.linkInline {
+  margin-left: 0;
+}
+
+.linkIcon {
+  width: 11px;
+  height: 11px;
+}
+
+/* ── Metric row ─────────────────────────────────────────────────────────── */
+.metricsRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.metricsRowTwo {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metricsRowThree {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.metricCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 13px;
+  border-radius: 10px;
+  transition: box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.metricCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.metricIcon {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.metricBody {
+  min-width: 0;
+}
+
+.metricValue {
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.8px;
+  color: hsl(var(--foreground));
+}
+
+.metricLabel {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+}
+
+/* ── Mod card ───────────────────────────────────────────────────────────── */
+.modCard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.modHeader {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.modIcon {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+}
+
+.modIconSvg {
+  width: 11px;
+  height: 11px;
+}
+
+.modTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.modCount {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--app-text-faint);
+}
+
+.modBody {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.modFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 13px;
+  border-top: 1px solid var(--app-border);
+}
+
+.footerNote {
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+/* ── List rows ──────────────────────────────────────────────────────────── */
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--app-border);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s ease;
+}
+
+.listRow:last-child {
+  border-bottom: none;
+}
+
+.listRow:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.listRowBtn {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--app-border);
+  text-align: left;
+  color: inherit;
+  transition: background 0.1s ease;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  cursor: pointer;
+}
+
+.listRowBtn:last-child {
+  border-bottom: none;
+}
+
+.listRowBtn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.listIcon {
+  display: flex;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.listContent {
+  min-width: 0;
+  flex: 1;
+}
+
+.listName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+
+.listSub {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}
+
+.listRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.time {
+  font-size: 11px;
+  color: var(--app-text-faint);
+}
+
+/* ── Status chips ───────────────────────────────────────────────────────── */
+.chip,
+.chipGreen,
+.chipAmber,
+.chipBlue,
+.chipPurple {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--app-border-strong);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--app-text-muted);
+}
+
+.chipGreen {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.22);
+}
+
+.chipAmber {
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.chipBlue {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.22);
+}
+
+.chipPurple {
+  color: hsl(var(--primary));
+  background: rgba(123, 92, 240, 0.1);
+  border-color: rgba(123, 92, 240, 0.22);
+}
+
+/* ── Grid layouts ───────────────────────────────────────────────────────── */
+.mainGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.gridTwo {
+  grid-template-columns: 1fr 1fr;
+}
+
+.gridThree {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.gridWide {
+  grid-template-columns: 1.35fr 0.65fr;
+}
+
+.gridWorkspace {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.stackCol {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  padding: 20px;
+  text-align: center;
+  gap: 8px;
+}
+
+.emptyIcon {
+  color: var(--app-text-faint);
+}
+
+.emptyTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.emptyDesc {
+  font-size: 11.5px;
+  color: var(--app-text-muted);
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+/* ── Step cards (flow) ──────────────────────────────────────────────────── */
+.stepCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--app-border);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.stepNum {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+}
+
+.stepTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.stepDesc {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}
+
+/* ── Planned feature rows ───────────────────────────────────────────────── */
+.plannedRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.plannedRow:last-child {
+  border-bottom: none;
+}
+
+.plannedDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--app-border-hover);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.plannedTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.plannedDesc {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--app-text-muted);
+  line-height: 1.4;
+}
+
+/* ── Artboard (image/video canvas area) ─────────────────────────────────── */
+.artboard {
+  display: flex;
+  min-height: 420px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px dashed var(--app-border-strong);
+  background: rgba(0, 0, 0, 0.02);
+  padding: 12px;
+}
+
+.artboardActive {
+  border-style: solid;
+}
+
+/* ── Prompt input row ───────────────────────────────────────────────────── */
+.promptRow {
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: rgba(0, 0, 0, 0.02);
+  padding: 12px;
+}
+
+.promptDivider {
+  height: 1px;
+  background: var(--app-border);
+  margin: 10px 0;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .metricsRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gridThree {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .gridWorkspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding: 10px;
+  }
+
+  .metricsRow,
+  .metricsRowThree,
+  .gridTwo,
+  .gridThree {
+    grid-template-columns: 1fr;
+  }
+
+  .statusStats {
+    grid-template-columns: 1fr;
+  }
+
+  .statusStatCell {
+    border-right: none;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .statusStatCell:last-child {
+    border-bottom: none;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}

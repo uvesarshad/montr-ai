@@ -1,0 +1,239 @@
+# =============================================================================
+# MontrAI — self-host compose (fair-code / source-available, n8n Sustainable
+# Use License). Single-tenant public core: one owner, one workspace, every
+# feature unlocked, BYOK/BYO-app driven. master plan §4A.
+#
+# Quick start:
+#   1. cp .env.example .env   (fill SECRETS — see .env.example for the gen cmds)
+#   2. docker compose up -d   (mongo, postgres, redis, web, worker)
+#   3. open http://localhost:3000  → first-run owner setup
+#
+# Optional voice/telephony stack (LiveKit):
+#   docker compose --profile voice up -d
+#
+# NOTES (build map §2 — boot topology):
+#   * mongo runs as a SINGLE-NODE REPLICA SET (rs0). BetterAuth + credit-hook
+#     transactions require it; a standalone mongod rejects transactions.
+#   * postgres is pgvector/pgvector:pg16 — pg-client.ts THROWS if DATABASE_URL is
+#     unset, and embeddings/brand-memory/RAG need the `vector` extension.
+#   * redis is mandatory: the worker exits 1 without it AND login fails-closed
+#     (auth rate-limiter) when Redis is down.
+#   * worker is required for scheduled posts, social publish, agent missions,
+#     sweepers, and token-refresh crons to run at all.
+#   * object storage: there is no working local-disk provider; point STORAGE_*
+#     at S3/Wasabi/OCI, or run a MinIO sidecar (commented out below).
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # MongoDB — single-node replica set (rs0). Transactions REQUIRE replSet.
+  # ---------------------------------------------------------------------------
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    # Healthcheck doubles as the one-time replica-set initiator: rs.status()
+    # fails until initiated, so we rs.initiate() with the in-container host. Once
+    # PRIMARY is elected, rs.status().ok === 1 and the check passes.
+    healthcheck:
+      test: >
+        mongosh --quiet --eval '
+          try { rs.status().ok }
+          catch (e) {
+            rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "mongo:27017" }] }).ok
+          }
+        '
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL + pgvector. `vector` extension is created on first init.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: montrai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Runs ONLY on first init of an empty data dir. Enables the vector ext.
+      - ./docker/postgres-init/01-create-vector-extension.sql:/docker-entrypoint-initdb.d/01-create-vector-extension.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d montrai"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # Redis — appendonly for durability. Mandatory (worker + login depend on it).
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Web — custom Next.js + Socket.io server (node server.js). Socket.io at
+  # /api/socket. Set AUTH_TRUST_HOST=true in .env when behind a reverse proxy.
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: montrai:latest
+    restart: unless-stopped
+    command: ["node", "server.js"]
+    env_file:
+      - .env
+    environment:
+      # Compose-internal service hostnames (overridable in .env). These match the
+      # build-map §1 compose defaults so a stock .env "just works" in compose.
+      NODE_ENV: production
+      PORT: "3000"
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/montrai?replicaSet=rs0}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/montrai}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Worker — BullMQ workflow worker (tsx scripts/workflow-worker.ts). Exits 1
+  # without Redis. Required for scheduled/social/agent/sweeper/cron features.
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: montrai:latest
+    restart: unless-stopped
+    command: ["npm", "run", "worker"]
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/montrai?replicaSet=rs0}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/montrai}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Voice WebSocket gateway (optional). Profile: voice. Needs LIVEKIT_* in .env.
+  # ---------------------------------------------------------------------------
+  voice-ws:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: montrai:latest
+    restart: unless-stopped
+    command: ["npm", "run", "voice-ws"]
+    profiles: ["voice"]
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/montrai?replicaSet=rs0}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/montrai}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    ports:
+      # Container binds VOICE_WS_PORT (server/voice-ws.js default 3001); publish
+      # the same value on the host. Keep host:container in sync if you override.
+      - "${VOICE_WS_PORT:-3001}:${VOICE_WS_PORT:-3001}"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Voice worker (optional). Profile: voice. Dispatches outbound/inbound calls.
+  # ---------------------------------------------------------------------------
+  voice-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: montrai:latest
+    restart: unless-stopped
+    command: ["npm", "run", "voice-worker"]
+    profiles: ["voice"]
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/montrai?replicaSet=rs0}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/montrai}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # MinIO (optional, commented) — S3-compatible object storage for a zero-cloud
+  # self-host. There is no working local-disk storage provider; uncomment this
+  # and set in .env:
+  #   STORAGE_PROVIDER=aws
+  #   AWS_REGION=us-east-1
+  #   AWS_ACCESS_KEY_ID=minioadmin
+  #   AWS_SECRET_ACCESS_KEY=minioadmin
+  #   AWS_S3_BUCKET=montrai-media
+  #   AWS_S3_ENDPOINT=http://minio:9000   (if/when the S3 provider honors it)
+  # Remember a public-read (or signed-URL) bucket policy or media previews break.
+  # ---------------------------------------------------------------------------
+  # minio:
+  #   image: minio/minio:latest
+  #   restart: unless-stopped
+  #   command: ["server", "/data", "--console-address", ":9001"]
+  #   environment:
+  #     MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+  #     MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #     - minio_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "mc", "ready", "local"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+
+volumes:
+  mongo_data:
+  postgres_data:
+  redis_data:
+  # minio_data:

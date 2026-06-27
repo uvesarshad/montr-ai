@@ -1,0 +1,58 @@
+# MontrAI OSS — gitleaks configuration
+# ---------------------------------------------------------------------------
+# Injected into the EMITTED public tree root by scripts/oss-generate/emit-tree.ts
+# so that (a) the generator's own §3.3 HARD GATE scan and (b) the public repo's CI
+# (`gitleaks detect --no-git --source .`) both auto-discover it (<source>/.gitleaks.toml).
+#
+# It extends the full default gitleaks ruleset (useDefault = true) and ONLY adds
+# narrowly-scoped allowlists for verified, hand-audited FALSE POSITIVES. It does
+# NOT disable any rule. Real secrets still fail the gate.
+#
+# Audited false positives (gitleaks 8.30.x, emitted-tree scan):
+#   1. curl-auth-header     — doc-comment `Authorization: Bearer YOUR_CRON_SECRET`
+#                             examples in src/app/api/cron/whatsapp/**/route.ts
+#   2. linkedin-client-secret — TypeScript export identifiers
+#                             `export const linkedinProvider: PlatformProvider`
+#                             and `linkedinOrgFetcher: AnalyticsFetcher` (no secret)
+#   3. settings UI placeholders — masked-input placeholder="sk-ant-..."/"AIza..."/"sk-or-..."
+#   4. ONNX MODEL_SHA256    — model-file integrity hash (public, not a credential)
+#   5. whsec_ comment       — Stripe webhook-secret *prefix* shown in a doc comment
+# ---------------------------------------------------------------------------
+
+title = "MontrAI OSS"
+
+[extend]
+useDefault = true
+
+# 1 — cron doc-comment curl examples: literal placeholder, never a live secret.
+[[allowlists]]
+description = "Cron route doc-comment curl examples (placeholder CRON_SECRET)"
+regexTarget = "line"
+regexes = [
+  '''Authorization: Bearer YOUR_CRON_SECRET''',
+]
+
+# 2 — LinkedIn provider/fetcher TS exports mis-detected as a client secret.
+[[allowlists]]
+description = "TypeScript LinkedIn export identifiers (not a client secret)"
+regexTarget = "line"
+regexes = [
+  '''export const linkedin(Provider|OrgFetcher)\s*:''',
+]
+
+# 3 — API-key input placeholder strings in the settings UI.
+[[allowlists]]
+description = "Settings UI masked-input placeholders"
+regexTarget = "line"
+regexes = [
+  '''placeholder="(sk-ant-\.\.\.|AIza\.\.\.|sk-or-\.\.\.)"''',
+]
+
+# 4 + 5 — public ONNX integrity hash + Stripe webhook-secret prefix in a comment.
+[[allowlists]]
+description = "Non-credential hashes / prefixes (ONNX MODEL_SHA256, whsec_ doc)"
+regexTarget = "line"
+regexes = [
+  '''MODEL_SHA256''',
+  '''whsec_''',
+]

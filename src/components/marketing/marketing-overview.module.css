@@ -1,0 +1,576 @@
+/* ── Marketing Overview – flat system tokens ─────────────────────────────── */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+}
+
+/* ── Channel status bar ─────────────────────────────────────────────────── */
+.channelBar {
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  border-left: 3px solid hsl(var(--primary));
+}
+
+.channelHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid hsl(var(--border));
+  background: transparent;
+}
+
+.channelStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.channelStatCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 14px;
+  border-right: 1px solid hsl(var(--border));
+}
+
+.channelStatCell:last-child {
+  border-right: none;
+}
+
+.channelStatValue {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  color: hsl(var(--foreground));
+}
+
+.channelStatValueAccent {
+  color: hsl(var(--primary));
+}
+
+.channelStatLabel {
+  font-size: 10.5px;
+  color: hsl(var(--muted-foreground));
+}
+
+.channelName {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.channelSub {
+  font-size: 11.5px;
+  color: hsl(var(--muted-foreground));
+}
+
+/* ── Live pill ──────────────────────────────────────────────────────────── */
+.livePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.liveText {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Link ───────────────────────────────────────────────────────────────── */
+.link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: hsl(var(--primary));
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+  opacity: 0.82;
+}
+
+.linkInline {
+  margin-left: 0;
+}
+
+.linkIcon {
+  width: 11px;
+  height: 11px;
+}
+
+/* ── Metric row ─────────────────────────────────────────────────────────── */
+.metricsRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.metricCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 13px;
+  border-radius: 12px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  transition: background 0.12s ease;
+}
+
+.metricCard:hover {
+  background: hsl(var(--secondary));
+}
+
+.metricIcon {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: hsl(var(--secondary));
+  color: hsl(var(--muted-foreground));
+}
+
+.metricBody {
+  min-width: 0;
+}
+
+.metricValue {
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.8px;
+  color: hsl(var(--foreground));
+}
+
+.metricValueAccent {
+  color: hsl(var(--primary));
+}
+
+.metricLabel {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+
+/* ── Main grid layouts ──────────────────────────────────────────────────── */
+.mainGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.mainGridTwo {
+  grid-template-columns: 1fr 1fr;
+}
+
+.mainGridWide {
+  grid-template-columns: 1.35fr 0.65fr;
+}
+
+.mainGridThree {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.stackCol {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Mod card ───────────────────────────────────────────────────────────── */
+.modCard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  min-width: 0;
+  transition: background 0.12s ease;
+}
+
+.modCard:hover {
+  background: hsl(var(--secondary) / 0.6);
+}
+
+.modHeader {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.modIcon {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: hsl(var(--secondary));
+  color: hsl(var(--muted-foreground));
+}
+
+.modIconSvg {
+  width: 11px;
+  height: 11px;
+}
+
+.modTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.modCount {
+  font-size: 11px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+
+.modBody {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.modFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 13px;
+  border-top: 1px solid hsl(var(--border));
+}
+
+.footerNote {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+}
+
+/* ── List rows ──────────────────────────────────────────────────────────── */
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 13px;
+  border-bottom: 1px solid hsl(var(--border));
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s ease;
+}
+
+.listRow:last-child {
+  border-bottom: none;
+}
+
+.listRow:hover {
+  background: hsl(var(--secondary));
+}
+
+.listIcon {
+  display: flex;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.listIconActive {
+  background: hsl(var(--secondary));
+  color: hsl(var(--primary));
+}
+
+.listIconInactive {
+  background: hsl(var(--secondary));
+  color: hsl(var(--muted-foreground));
+}
+
+.listContent {
+  min-width: 0;
+  flex: 1;
+}
+
+.listName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+
+.listSub {
+  margin-top: 1px;
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+}
+
+.listRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.time {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+}
+
+/* ── Status chips ───────────────────────────────────────────────────────── */
+.chip,
+.chipGreen,
+.chipAmber,
+.chipBlue,
+.chipPurple {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid hsl(var(--border));
+  font-size: 10px;
+  font-weight: 600;
+  background: hsl(var(--secondary));
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+}
+
+.chipGreen {
+  color: hsl(var(--foreground));
+  background: hsl(var(--secondary));
+  border-color: hsl(var(--border));
+}
+
+.chipAmber {
+  color: hsl(var(--foreground));
+  background: hsl(var(--secondary));
+  border-color: hsl(var(--border));
+}
+
+.chipBlue {
+  color: hsl(var(--foreground));
+  background: hsl(var(--secondary));
+  border-color: hsl(var(--border));
+}
+
+.chipPurple {
+  color: hsl(var(--primary));
+  background: hsl(var(--secondary));
+  border-color: hsl(var(--border));
+}
+
+/* ── Section label ──────────────────────────────────────────────────────── */
+.sectionLabel {
+  padding: 7px 13px 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+/* ── Info grid (2×2 stats) ──────────────────────────────────────────────── */
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.infoCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-right: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  transition: background 0.1s ease;
+}
+
+.infoCell:nth-child(even) {
+  border-right: none;
+}
+
+.infoCell:nth-last-child(-n + 2) {
+  border-bottom: none;
+}
+
+.infoCell:hover {
+  background: hsl(var(--secondary));
+}
+
+.infoCellValue {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  color: hsl(var(--foreground));
+}
+
+.infoCellLabel {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+
+/* ── Priority rows ──────────────────────────────────────────────────────── */
+.priorityRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 13px;
+  border-bottom: 1px solid hsl(var(--border));
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s ease;
+}
+
+.priorityRow:last-child {
+  border-bottom: none;
+}
+
+.priorityRow:hover {
+  background: hsl(var(--secondary));
+}
+
+.priorityDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.priorityFocus {
+  background: hsl(var(--primary));
+}
+
+.prioritySetup {
+  background: hsl(var(--border));
+}
+
+.priorityContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.priorityTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: hsl(var(--foreground));
+}
+
+.priorityDesc {
+  margin-top: 2px;
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.4;
+}
+
+/* ── Status pip ─────────────────────────────────────────────────────────── */
+.pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.pipGreen {
+  background: hsl(var(--primary));
+}
+
+.pipGray {
+  background: hsl(var(--border));
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
+.emptyState {
+  display: flex;
+  min-height: 120px;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .metricsRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mainGridThree {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .mainGridWide {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding: 10px;
+  }
+
+  .metricsRow,
+  .mainGridTwo,
+  .mainGridThree {
+    grid-template-columns: 1fr;
+  }
+
+  .channelStats {
+    grid-template-columns: 1fr;
+  }
+
+  .channelStatCell {
+    border-right: none;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  .channelStatCell:last-child {
+    border-bottom: none;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}

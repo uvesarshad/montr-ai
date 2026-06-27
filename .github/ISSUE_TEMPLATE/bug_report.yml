@@ -1,0 +1,98 @@
+name: Bug report
+description: Report a reproducible problem in the MontrAI fair-code core.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please search existing issues
+        first to avoid duplicates. For security vulnerabilities, **do not** open
+        a public issue — see `SECURITY.md` for private disclosure.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the bug.
+      placeholder: When I ... the app ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal, deterministic steps. Include a repo/commit if possible.
+      placeholder: |
+        1. Run `docker compose up`
+        2. Go to ...
+        3. Click ...
+        4. See error
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      description: Which part of the product does this touch?
+      options:
+        - "Unsure"
+        - "Agent (goal -> strategy -> missions)"
+        - "CRM"
+        - "Social"
+        - "WhatsApp"
+        - "Inbox"
+        - "Campaigns / Email"
+        - "AI Studio"
+        - "Canvas / Workflows"
+        - "Forms / Docs"
+        - "Analytics"
+        - "Voice"
+        - "Connections / OAuth / AI router"
+        - "Workers / runtime / server"
+        - "Docs / setup / Docker"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: How are you running MontrAI?
+      placeholder: |
+        - Deploy: Docker compose / self-host / local dev
+        - OS: Ubuntu 24.04
+        - Node: 20.x
+        - Browser (if UI): Chrome 1xx
+        - Version / commit: 0.7.1 @ abc1234
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Relevant server/worker logs, stack traces, or screenshots. Redact secrets.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I confirmed this is a code defect, not a configuration/secrets question.
+          required: true
+        - label: This is NOT a security vulnerability (those go through SECURITY.md, privately).
+          required: true

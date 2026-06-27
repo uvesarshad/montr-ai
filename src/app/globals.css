@@ -1,0 +1,701 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Layered Neutral Surface System (2026-06-10). Contrast from ELEVATION, not
+       color: warm-neutral surface ladder, near-black --primary, violet --brand +
+       warm --warm as the two rationed accents. Status colors stay DATA.
+       docs/ui/layered-neutral-surface-system.md */
+    --background: 60 7% 95%;            /* page #F2F2F0 (warm off-white) */
+    --foreground: 0 0% 10%;             /* text #1A1A1A */
+    --card: 0 0% 100%;                  /* card #FFFFFF */
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 0 0% 4%;                 /* ink #0A0A0A — dark convex button */
+    --primary-foreground: 0 0% 100%;
+    --primary-hi: 0 0% 18%;             /* convex gradient top stop (lighter than --primary) */
+    --secondary: 48 9% 96%;             /* inset #F6F6F4 */
+    --secondary-foreground: 0 0% 10%;
+    --muted: 48 9% 96%;                 /* inset #F6F6F4 */
+    --muted-foreground: 0 0% 42%;       /* text-2 #6B6B6B */
+    --accent: 48 8% 93%;                /* hover surface */
+    --accent-foreground: 0 0% 10%;
+    --destructive: 2 78% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;                 /* subtle ≈ rgba(10,10,10,.08) */
+    --input: 0 0% 88%;
+    --ring: 252 91% 66%;
+    --radius: 0.75rem;                  /* 12px nested; cards use rounded-2xl (16px) */
+    --chart-1: 252 91% 66%;
+    --chart-2: 152 52% 42%;
+    --chart-3: 232 78% 60%;
+    --chart-4: 36 90% 52%;
+    --chart-5: 330 80% 60%;
+    --sidebar-item-py: 0.25rem;
+
+    /* brand = violet #7a5af8 (rationed accent #1) */
+    --brand: 252 91% 66%;
+    --brand-strong: 252 70% 60%;
+    --brand-foreground: 0 0% 100%;
+    --brand-muted: 255 80% 96%;
+
+    /* warm = #F0783C (rationed accent #2 — ceiling of two) */
+    --warm: 20 85% 59%;
+    --warm-strong: 17 78% 53%;
+    --warm-foreground: 0 0% 100%;
+    --warm-muted: 24 90% 95%;
+
+    /* semantic tones + muted surfaces — status = DATA, separate from accents */
+    --success: 152 52% 42%; --success-foreground: 152 60% 28%; --success-muted: 152 50% 94%;
+    --warning: 36 90% 52%;  --warning-foreground: 32 80% 34%;  --warning-muted: 40 90% 94%;
+    --info-h: 232 78% 60%;  --info-foreground: 232 60% 44%;    --info-muted: 226 80% 95%;
+    --danger: 2 78% 58%;    --danger-foreground: 2 70% 44%;    --danger-muted: 4 80% 95%;
+
+    /* pastel KPI-tile surfaces (very light) + their tinted borders (mockup --pastel-bd-*) */
+    --pastel-violet: 258 60% 97%;
+    --pastel-mint:   158 48% 95%;
+    --pastel-blue:   212 70% 96%;
+    --pastel-peach:  28 80% 96%;
+    --pastel-rose:   2 70% 97%;
+    --pastel-lemon:  48 86% 95%;
+    --pastel-bd-violet: 258 36% 89%;
+    --pastel-bd-mint:   158 30% 85%;
+    --pastel-bd-blue:   212 42% 88%;
+    --pastel-bd-peach:  28 52% 87%;
+    --pastel-bd-rose:   2 42% 89%;
+    --pastel-bd-lemon:  48 56% 84%;
+
+    /* Shadows — two-layer (ambient + key), NO top sheen. Convex buttons get a
+       faint BOTTOM inner shadow instead (the bright top highlight was rejected). */
+    --shadow-btn: inset 0 -1px 1px rgba(10, 10, 10, 0.10), 0 1px 2px rgba(10, 10, 10, 0.07);
+    --shadow-card: 0 1px 2px rgba(10, 10, 10, 0.05), 0 8px 24px rgba(10, 10, 10, 0.06);
+    --shadow-card-hover: 0 2px 6px rgba(10, 10, 10, 0.06), 0 14px 34px rgba(10, 10, 10, 0.10);
+
+    /* Mood-board semantic tokens (hex; used directly by chrome + components) — warm-neutralized */
+    --ink-900: #1a1a1a;
+    --ink-600: #6b6b6b;
+    --ink-500: #9b9b9b;
+    --ink-400: #b0b0b0;
+    --surface-1: #ffffff;
+    --surface-2: #f6f6f4;
+    --border-solid: #e6e6e3;
+    --accent-600: #6b47f5;
+    --accent-700: #5a36e0;
+    --accent-100: #efeafe;
+    --accent-50: #f6f3ff;
+    --panel-dark: #0a0a0a;
+    --info: #008db0;
+    --accent-from: #7a5af8;
+    --accent-to: #6a46ee;
+    --accent-glow: rgba(122, 90, 248, 0.22);
+
+    --app-bg: #f2f2f0;
+    --app-surface: #ffffff;
+    --app-surface-strong: #ffffff;
+    --app-surface-hover: #f6f6f4;
+    --app-sidebar-bg: #ffffff;
+    --app-header-bg: #ffffff;
+    --app-border: #ececea;
+    --app-border-strong: #e6e6e3;
+    --app-border-hover: #dcdcd8;
+    --app-text-muted: #6b6b6b;
+    --app-text-faint: #9b9b9b;
+    --app-shadow: 0 1px 2px rgba(10, 10, 10, 0.04);
+    --app-shadow-strong: 0 8px 24px rgba(10, 10, 10, 0.10);
+  }
+
+  .dark {
+    /* Dark theme — Layered Neutral Surface System: warm-neutral dark ladder (hue ~40,
+       low sat), elevation = lighter. Violet --brand + warm --warm accents kept.
+       Inverted/featured surfaces (rail) go to near-black; primary button flips to light. */
+    --background: 40 5% 8%;             /* page — deepest, ~#15140F */
+    --foreground: 48 10% 94%;           /* warm near-white ink ~#F1EFE9 */
+    --card: 40 5% 12%;                  /* raised card ~#201E1A */
+    --card-foreground: 48 10% 94%;
+    --popover: 40 5% 13%;
+    --popover-foreground: 48 10% 94%;
+    --primary: 0 0% 96%;                /* inverted: light convex button in dark */
+    --primary-foreground: 0 0% 9%;
+    --primary-hi: 0 0% 100%;            /* convex top stop (lighter than --primary) */
+    --secondary: 40 5% 17%;             /* inset / chips — one rung up */
+    --secondary-foreground: 48 8% 90%;
+    --muted: 40 5% 17%;
+    --muted-foreground: 40 6% 60%;      /* ~#9C988F */
+    --accent: 40 5% 20%;                /* hover surface */
+    --accent-foreground: 48 8% 90%;
+    --destructive: 4 80% 66%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 5% 22%;                /* subtle ~rgba(255,255,255,.08) */
+    --input: 40 5% 25%;
+    --ring: 252 95% 72%;
+    --chart-1: 252 95% 72%;
+    --chart-2: 152 50% 55%;
+    --chart-3: 226 80% 70%;
+    --chart-4: 40 88% 60%;
+    --chart-5: 330 80% 64%;
+
+    /* brand = violet (rationed accent #1) */
+    --brand: 252 95% 72%;
+    --brand-strong: 252 80% 64%;
+    --brand-foreground: 0 0% 100%;
+    --brand-muted: 255 40% 26%;
+
+    /* warm = #F0783C (rationed accent #2) */
+    --warm: 20 88% 62%;
+    --warm-strong: 17 80% 55%;
+    --warm-foreground: 0 0% 100%;
+    --warm-muted: 24 40% 24%;
+
+    /* semantic tones + muted surfaces */
+    --success: 152 50% 55%; --success-foreground: 152 55% 78%; --success-muted: 152 30% 22%;
+    --warning: 40 88% 60%;  --warning-foreground: 40 85% 78%;  --warning-muted: 36 40% 24%;
+    --info-h: 226 80% 70%;  --info-foreground: 226 75% 82%;    --info-muted: 226 36% 26%;
+    --danger: 4 80% 66%;    --danger-foreground: 4 78% 80%;    --danger-muted: 4 40% 26%;
+
+    /* pastel KPI-tile surfaces + their tinted borders */
+    --pastel-violet: 258 30% 22%;
+    --pastel-mint:   158 28% 20%;
+    --pastel-blue:   212 34% 21%;
+    --pastel-peach:  28 36% 22%;
+    --pastel-rose:   2 34% 22%;
+    --pastel-lemon:  48 34% 21%;
+    --pastel-bd-violet: 258 24% 31%;
+    --pastel-bd-mint:   158 22% 29%;
+    --pastel-bd-blue:   212 26% 30%;
+    --pastel-bd-peach:  28 28% 31%;
+    --pastel-bd-rose:   2 26% 31%;
+    --pastel-bd-lemon:  48 26% 30%;
+
+    /* Shadows (dark) — two-layer, NO top sheen. Convex buttons get a faint bottom inset. */
+    --shadow-btn: inset 0 -1px 1px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.45), 0 14px 34px rgba(0, 0, 0, 0.6);
+
+    --ink-900: #f1efe9;
+    --ink-600: #9c988f;
+    --ink-500: #7c7870;
+    --ink-400: #5d5a53;
+    --surface-1: #201e1a;
+    --surface-2: #2a2823;
+    --border-solid: #383530;
+    --accent-600: #8b6cff;
+    --accent-700: #a18bff;
+    --accent-100: rgba(139, 108, 255, 0.18);
+    --accent-50: rgba(139, 108, 255, 0.12);
+    --panel-dark: #0a0a0a;
+    --info: #22b8d8;
+    --accent-from: #8b6cff;
+    --accent-to: #6b47f5;
+    --accent-glow: rgba(139, 108, 255, 0.30);
+
+    --app-bg: #15140f;
+    --app-surface: #201e1a;
+    --app-surface-strong: #201e1a;
+    --app-surface-hover: #2a2823;
+    --app-sidebar-bg: #0a0a0a;
+    --app-header-bg: #18160f;
+    --app-border: #2e2b25;
+    --app-border-strong: #38342d;
+    --app-border-hover: #423d35;
+    --app-text-muted: #9c988f;
+    --app-text-faint: #7c7870;
+    --app-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --app-shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@layer base {
+  html {
+    min-height: 100%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--app-bg);
+    color: hsl(var(--foreground));
+    /* mockup body spec (styles.css): Inter, 14px UI base, -0.006em tracking,
+       alternates cv05/cv11/ss01/calt, optimizeLegibility */
+    font-family: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    letter-spacing: -0.006em;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv05" 1, "cv11" 1, "ss01" 1, "calt" 1;
+    @apply antialiased selection:bg-primary/30 selection:text-foreground;
+  }
+
+  /* Layered Neutral Surface System: Poppins 700–800 headings, tight tracking */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-poppins), var(--font-inter), Inter, -apple-system, sans-serif;
+    letter-spacing: -0.025em;
+  }
+
+  h1 {
+    @apply scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl;
+  }
+
+  h2 {
+    @apply scroll-m-20 text-3xl font-bold tracking-tight first:mt-0;
+  }
+
+  h3 {
+    @apply scroll-m-20 text-2xl font-bold tracking-tight;
+  }
+
+  h4 {
+    @apply scroll-m-20 text-xl font-bold tracking-tight;
+  }
+
+  h5 {
+    @apply scroll-m-20 text-lg font-semibold tracking-tight;
+  }
+
+  h6 {
+    @apply scroll-m-20 text-base font-semibold tracking-tight;
+  }
+
+  p {
+    @apply leading-relaxed;
+    /* Changed from leading-7 for more modern feel */
+  }
+
+  /* Glassmorphism Utilities */
+  .glass {
+    @apply bg-background/60 backdrop-blur-md border-b border-border/50;
+  }
+
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-sm border border-border/50 shadow-sm;
+  }
+}
+
+@layer components {
+  .app-shell-bg {
+    background: var(--app-bg);
+  }
+
+  .app-glass {
+    background: var(--app-surface);
+    border: 1px solid var(--app-border-strong);
+    box-shadow: var(--app-shadow);
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  }
+
+  .app-glass-hover {
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, transform 0.16s ease;
+  }
+
+  .app-glass-hover:hover {
+    border-color: var(--app-border-hover);
+    background: var(--app-surface-hover);
+  }
+
+  .app-sidebar-frame {
+    background: var(--app-sidebar-bg);
+    border-color: var(--app-border);
+  }
+
+  .app-header-frame {
+    background: var(--app-header-bg);
+    border-bottom: 1px solid var(--app-border-strong);
+    backdrop-filter: blur(20px) saturate(1.25);
+    -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  }
+
+  .app-section-label {
+    color: var(--app-text-faint);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+}
+
+/* ui-kit: continuous sheen used by brand/primary buttons (optional flourish) */
+@keyframes montr-sheen {
+  from { transform: translateX(-160%) skewX(-18deg); }
+  to   { transform: translateX(260%) skewX(-18deg); }
+}
+
+/* ui-kit: convex-button hover flash (Layered Neutral Surface System).
+   A skewed light streak sweeps across continuously while hovered. The host
+   must be `relative isolate overflow-hidden`; the ::after sits at z-index -1
+   so it paints over the gradient fill but under the label. */
+@keyframes montr-flash {
+  from { transform: translateX(-180%) skewX(-14deg); }
+  to   { transform: translateX(320%)  skewX(-14deg); }
+}
+.btn-flash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 55%;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.5) 50%, transparent 80%);
+  transform: translateX(-180%) skewX(-14deg);
+  opacity: 0;
+}
+.btn-flash:hover::after {
+  opacity: 1;
+  animation: montr-flash 1.25s linear infinite;
+}
+
+/* ui-kit: aurora gradient text for hero headlines (mockup .ace-grad-text) —
+   starts at foreground, transitions through the violet brand. */
+.ace-grad-text {
+  background: linear-gradient(
+    92deg,
+    hsl(var(--foreground)) 0%,
+    color-mix(in oklch, hsl(var(--brand)), hsl(var(--foreground)) 35%) 45%,
+    color-mix(in oklch, hsl(var(--brand-strong)), hsl(var(--foreground)) 25%) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Add this for the edge hover effect */
+.react-flow__edge:hover .group>.react-flow__edge-path,
+.react-flow__edge:hover .group>.react-flow__edge-path-selector,
+.group:hover .react-flow__edge-path,
+.group:hover .react-flow__edge-path-selector {
+  stroke-width: 2;
+}
+
+.react-flow__edge .group:hover .opacity-0 {
+  opacity: 1;
+}
+
+/* TipTap Editor Styles */
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  height: 0;
+}
+
+/* Custom AI selection highlight */
+.ai-selection-highlight {
+  background-color: hsl(var(--primary) / 0.2);
+  color: inherit;
+}
+
+.prose {
+  --tw-prose-body: hsl(var(--foreground));
+  --tw-prose-headings: hsl(var(--foreground));
+  --tw-prose-lead: hsl(var(--muted-foreground));
+  --tw-prose-links: hsl(var(--primary));
+  --tw-prose-bold: hsl(var(--foreground));
+  --tw-prose-counters: hsl(var(--muted-foreground));
+  --tw-prose-bullets: hsl(var(--border));
+  --tw-prose-hr: hsl(var(--border));
+  --tw-prose-quotes: hsl(var(--foreground));
+  --tw-prose-quote-borders: hsl(var(--border));
+  --tw-prose-captions: hsl(var(--muted-foreground));
+  --tw-prose-code: hsl(var(--foreground));
+  --tw-prose-pre-code: hsl(var(--foreground));
+  --tw-prose-pre-bg: hsl(var(--muted));
+  --tw-prose-th-borders: hsl(var(--border));
+  --tw-prose-td-borders: hsl(var(--border));
+}
+
+.prose h1 {
+  @apply text-4xl font-bold;
+}
+
+.prose h2 {
+  @apply text-3xl font-semibold;
+}
+
+.prose h3 {
+  @apply text-2xl font-semibold;
+}
+
+.prose h4 {
+  @apply text-xl font-semibold;
+}
+
+.prose ul {
+  @apply list-disc list-inside;
+}
+
+.prose ol {
+  @apply list-decimal list-inside;
+}
+
+.prose li>p {
+  @apply inline;
+}
+
+.prose li {
+  @apply my-2;
+}
+
+.prose p {
+  @apply my-4;
+}
+
+.prose a {
+  @apply text-primary hover:underline;
+}
+
+.prose img {
+  @apply rounded-md;
+}
+
+/* Task List Styles for TipTap */
+.task-list {
+  @apply list-none pl-0;
+}
+
+.task-item {
+  @apply flex items-start gap-2 my-2;
+}
+
+.task-item input[type="checkbox"] {
+  @apply mt-1 cursor-pointer rounded border-2 border-border;
+}
+
+.task-item input[type="checkbox"]:checked {
+  @apply bg-primary border-primary;
+}
+
+.task-item>div {
+  @apply flex-1;
+}
+
+.task-item>div>p {
+  @apply my-0;
+}
+
+/* Code block styling */
+.prose pre {
+  @apply bg-muted rounded-md p-4 overflow-x-auto;
+}
+
+.prose code {
+  @apply bg-muted px-1.5 py-0.5 rounded text-sm;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-border pl-4 italic my-4;
+}
+
+/* driver.js overrides */
+.driver-popover.driverjs-theme {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  padding: 16px !important;
+}
+
+.driver-popover.driverjs-theme .driver-popover-title {
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 16px;
+  color: hsl(var(--foreground));
+  margin-bottom: 8px;
+  padding-right: 32px;
+}
+
+.driver-popover.driverjs-theme .driver-popover-description {
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 16px;
+}
+
+.driver-popover.driverjs-theme .driver-popover-arrow {
+  display: none !important;
+}
+
+/* Button Container */
+.driver-popover.driverjs-theme .driver-popover-footer {
+  margin-top: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+
+/* Reset default button styles first */
+.driver-popover.driverjs-theme button {
+  all: unset !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  border-radius: 8px !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  box-sizing: border-box !important;
+}
+
+/* Next / Finish Button */
+.driver-popover.driverjs-theme button.driver-popover-next-btn {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  height: 34px !important;
+  padding: 0 16px !important;
+  margin-left: 8px !important;
+}
+
+.driver-popover.driverjs-theme button.driver-popover-next-btn:hover {
+  background-color: hsl(var(--primary) / 0.9) !important;
+}
+
+/* Previous Button */
+.driver-popover.driverjs-theme button.driver-popover-prev-btn {
+  background-color: transparent !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  height: 34px !important;
+  padding: 0 12px !important;
+}
+
+.driver-popover.driverjs-theme button.driver-popover-prev-btn:hover {
+  background-color: hsl(var(--accent)) !important;
+}
+
+.driver-popover.driverjs-theme button.driver-popover-btn-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Close Button */
+.driver-popover.driverjs-theme button.driver-popover-close-btn {
+  background-color: transparent !important;
+  color: hsl(var(--muted-foreground)) !important;
+  height: 24px !important;
+  width: 24px !important;
+  line-height: 24px !important;
+  border-radius: 6px !important;
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  z-index: 100 !important;
+  pointer-events: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.driver-popover.driverjs-theme button.driver-popover-close-btn:hover {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.driver-popover.driverjs-theme .driver-popover-progress-text {
+  color: hsl(var(--muted-foreground)) !important;
+  font-size: 11px !important;
+  margin-right: auto !important;
+}
+
+/* Sidebar Scrollbar Utility */
+.sidebar-scroll-container {
+  scrollbar-gutter: stable;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar styling for Webkit */
+.sidebar-scroll-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll-container::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 20px;
+}
+
+.sidebar-scroll-container:hover::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #printable-content,
+  #printable-content * {
+    visibility: visible;
+  }
+
+  #printable-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white;
+    color: black;
+  }
+
+  /* Hide typical UI elements even if inside printable area if marked */
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* UI Redesign Classes */
+@keyframes flare {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.flare-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.flare-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(120deg,
+      rgba(255, 255, 255, 0) 30%,
+      rgba(255, 255, 255, 0.8),
+      rgba(255, 255, 255, 0) 70%);
+  transform: translateX(-100%);
+}
+
+.flare-btn:hover::after {
+  animation: flare 0.9s infinite linear;
+}

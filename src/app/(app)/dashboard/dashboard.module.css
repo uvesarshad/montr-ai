@@ -1,0 +1,919 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding-bottom: 28px;
+}
+
+.agentPanel {
+  overflow: hidden;
+  border-left: 3px solid hsl(var(--primary));
+  border-radius: 10px;
+}
+
+.agentHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--app-border);
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.1), transparent);
+}
+
+.livePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(22, 163, 74, 0.22);
+  color: #16a34a;
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.liveText {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.agentTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.agentSub {
+  font-size: 11.5px;
+  color: var(--app-text-muted);
+}
+
+.link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: hsl(var(--primary));
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+  opacity: 0.82;
+}
+
+.linkIcon {
+  width: 11px;
+  height: 11px;
+}
+
+.agentTasks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.agentTask {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 11px 14px;
+  border-right: 1px solid var(--app-border);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s ease;
+}
+
+.agentTask:last-child {
+  border-right: none;
+}
+
+.agentTask:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.taskTop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.taskBadge,
+.taskBadgeQueued,
+.taskBadgeDone {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.taskBadge {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(22, 163, 74, 0.22);
+}
+
+.taskBadgeQueued {
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+
+.taskBadgeDone {
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
+  border: 1px solid hsl(var(--primary) / 0.22);
+}
+
+.taskTime {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--app-text-faint);
+}
+
+.taskName {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: hsl(var(--foreground));
+}
+
+.taskMeta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+.metaDivider {
+  color: var(--app-text-faint);
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.progressTrack {
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--app-border-strong);
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-from), var(--accent-to));
+}
+
+.progressPct {
+  min-width: 30px;
+  text-align: right;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+}
+
+.metricsRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.metricCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 13px;
+  border-radius: 10px;
+  transition: box-shadow 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.metricCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.metricIcon {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.metricBody {
+  min-width: 0;
+}
+
+.metricValue {
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.8px;
+  color: hsl(var(--foreground));
+}
+
+.metricLabel {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+}
+
+.metricDelta {
+  margin-left: auto;
+  text-align: right;
+}
+
+.metricDeltaUp {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.metricDeltaNote {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--app-text-faint);
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.itemAuto {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 340px;
+}
+
+.itemCrm {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 340px;
+}
+
+.itemSocial {
+  grid-column: 1 / 3;
+  grid-row: 2;
+  min-height: 220px;
+}
+
+.itemDocs {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.itemForms {
+  grid-column: 1;
+  grid-row: 4;
+}
+
+.itemStudio {
+  grid-column: 2;
+  grid-row: 3 / 5;
+}
+
+.itemAgent {
+  grid-column: 3;
+  grid-row: 1 / 5;
+}
+
+.modCard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.modHeader {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.modIcon {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+}
+
+.modIconSvg {
+  width: 11px;
+  height: 11px;
+}
+
+.modTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.modCount {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--app-text-faint);
+}
+
+.modBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.modFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 13px;
+  border-top: 1px solid var(--app-border);
+}
+
+.footerNote {
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--app-border);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.1s ease;
+}
+
+.listRow:last-child {
+  border-bottom: none;
+}
+
+.listRow:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.listIcon {
+  display: flex;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.avatar {
+  display: flex;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent-from), var(--accent-to));
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.listContent {
+  min-width: 0;
+  flex: 1;
+}
+
+.listName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+
+.listSub {
+  margin-top: 1px;
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+.listRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.time {
+  font-size: 11px;
+  color: var(--app-text-faint);
+}
+
+.pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.green {
+  background: #16a34a;
+}
+
+.amber {
+  background: #d97706;
+}
+
+.blue {
+  background: #2563eb;
+}
+
+.purple {
+  background: hsl(var(--primary));
+}
+
+.gray {
+  background: var(--app-border-hover);
+}
+
+.chip,
+.chipGreen,
+.chipAmber,
+.chipBlue,
+.chipPurple {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--app-border-strong);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+}
+
+.chipGreen {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.22);
+}
+
+.chipAmber {
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.chipBlue {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.22);
+}
+
+.chipPurple {
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
+  border-color: hsl(var(--primary) / 0.22);
+}
+
+.sectionLabel {
+  padding: 7px 13px 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+}
+
+.divider {
+  height: 1px;
+  background: var(--app-border);
+}
+
+.pipelineRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.pipelineLabel {
+  min-width: 68px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+}
+
+.pipelineTrack {
+  flex: 1;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--app-border-strong);
+}
+
+.pipelineFill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.pipelineValue {
+  min-width: 28px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.roadmapHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.roadmapBadge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid hsl(var(--primary) / 0.22);
+  background: hsl(var(--primary) / 0.1);
+  font-size: 10px;
+  font-weight: 600;
+  color: hsl(var(--primary));
+}
+
+.roadmapProgress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+.roadmapProgressText {
+  font-size: 12px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.roadmapRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 13px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.roadmapDot,
+.roadmapDotDone,
+.roadmapDotActive {
+  display: flex;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  border-radius: 999px;
+  border: 1.5px solid var(--app-border-strong);
+  font-size: 9px;
+  color: transparent;
+}
+
+.roadmapDotDone {
+  color: #fff;
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.roadmapDotActive {
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
+  border-color: hsl(var(--primary));
+}
+
+.roadmapContent {
+  min-width: 0;
+  flex: 1;
+}
+
+.roadmapTitle {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: hsl(var(--foreground));
+}
+
+.roadmapTitleDone {
+  text-decoration: line-through;
+  color: var(--app-text-muted);
+}
+
+.roadmapTitleActive {
+  font-weight: 600;
+}
+
+.roadmapSub {
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: var(--app-text-faint);
+}
+
+.priority {
+  flex-shrink: 0;
+  margin-top: 1px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--app-border-strong);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--app-text-faint);
+}
+
+.priorityActive {
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
+  border: 1px solid hsl(var(--primary) / 0.22);
+}
+
+.socialInner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.socialLeft {
+  overflow-y: auto;
+  border-right: 1px solid var(--app-border);
+}
+
+.socialRight {
+  overflow-y: auto;
+}
+
+.miniLabel {
+  padding: 6px 12px 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--app-text-faint);
+}
+
+.postBar {
+  width: 3px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.perfGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.perfCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-right: 1px solid var(--app-border);
+  border-bottom: 1px solid var(--app-border);
+  transition: background 0.1s ease;
+}
+
+.perfCell:nth-child(even) {
+  border-right: none;
+}
+
+.perfCell:nth-last-child(-n + 2) {
+  border-bottom: none;
+}
+
+.perfCell:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.perfValue {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  color: hsl(var(--foreground));
+}
+
+.perfLabel {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+}
+
+.perfDelta {
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.platformRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.platformRow:last-child {
+  border-bottom: none;
+}
+
+.platformDot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.platformName {
+  flex: 1;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+
+.platformStat {
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+.emptyState {
+  display: flex;
+  min-height: 180px;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+@media (max-width: 1279px) {
+  .metricsRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mainGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .itemAgent,
+  .itemSocial {
+    grid-column: 1 / -1;
+  }
+
+  .itemAgent {
+    grid-row: auto;
+  }
+
+  .itemStudio,
+  .itemForms,
+  .itemDocs,
+  .itemAuto,
+  .itemCrm {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .agentTasks,
+  .socialInner,
+  .mainGrid,
+  .metricsRow {
+    grid-template-columns: 1fr;
+  }
+
+  .socialLeft {
+    border-right: none;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .agentTask {
+    border-right: none;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .agentTask:last-child {
+    border-bottom: none;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── Magic-UI-forward load-in animations ── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes barGrow {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.agentPanel {
+  animation: fadeUp 0.5s ease 0.04s backwards;
+}
+
+.metricsRow > * {
+  animation: fadeUp 0.45s ease backwards;
+}
+
+.metricsRow > *:nth-child(1) { animation-delay: 0.10s; }
+.metricsRow > *:nth-child(2) { animation-delay: 0.15s; }
+.metricsRow > *:nth-child(3) { animation-delay: 0.20s; }
+.metricsRow > *:nth-child(4) { animation-delay: 0.25s; }
+
+.mainGrid > * {
+  animation: fadeUp 0.45s ease backwards;
+}
+
+.mainGrid > *:nth-child(1) { animation-delay: 0.22s; }
+.mainGrid > *:nth-child(2) { animation-delay: 0.28s; }
+.mainGrid > *:nth-child(3) { animation-delay: 0.34s; }
+.mainGrid > *:nth-child(4) { animation-delay: 0.40s; }
+.mainGrid > *:nth-child(5) { animation-delay: 0.46s; }
+.mainGrid > *:nth-child(6) { animation-delay: 0.52s; }
+.mainGrid > *:nth-child(7) { animation-delay: 0.58s; }
+
+.pipelineFill,
+.progressFill {
+  transform-origin: left center;
+  animation: barGrow 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.32s backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agentPanel,
+  .metricsRow > *,
+  .mainGrid > *,
+  .pipelineFill,
+  .progressFill {
+    animation: none;
+  }
+}
