@@ -36,10 +36,13 @@ RUN apt-get update \
 COPY package.json package-lock.json* ./
 # Full install (devDeps included): the build needs `cross-env`, `tsx`,
 # `typescript`, `tailwindcss`, `postcss`; the worker needs `tsx` at runtime.
-# `--include=dev` is explicit so devDeps install even if the host/CI environment
-# has NODE_ENV=production (which would otherwise make npm omit them → the build
-# script's `cross-env` goes missing and `npm run build` fails 127).
-RUN npm ci --include=dev
+# We use `npm install` (not `npm ci`): the committed lock is generated on the
+# maintainer's host and omits some platform-conditional optional deps (e.g.
+# @emnapi/* for the Linux native/wasm variants of onnxruntime/sharp), which makes
+# strict `npm ci` fail "Missing: … from lock file". `npm install` resolves the
+# correct per-platform deps for this Linux image. `--include=dev` forces devDeps
+# even if NODE_ENV=production (else `cross-env` is missing → `npm run build` 127).
+RUN npm install --include=dev --no-audit --no-fund
 
 # -----------------------------------------------------------------------------
 # Stage 2 — builder: produce the production Next.js build.
