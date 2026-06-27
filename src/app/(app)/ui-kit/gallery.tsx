@@ -56,6 +56,7 @@ import {
   ChatMessage,
   Checkbox,
   Chip,
+  BetaBadge,
   CollapsibleSection,
   ConfirmDialog,
   ConversationItem,
@@ -310,6 +311,20 @@ function PrimitivesSection() {
             ))}
             <span className="self-center text-[11.5px] text-muted-foreground">← toggle chips</span>
           </div>
+        </div>
+      </Demo>
+
+      <Demo title="BetaBadge" hint="tone (default · onDark) · size (sm · md) — flags non-launch-critical surfaces">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+            AI Studio <BetaBadge size="md" />
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
+            Ads <BetaBadge size="sm" />
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-[#0a0a0a] px-2.5 py-1.5 text-[13px] font-medium text-white/70">
+            AI Bots <BetaBadge tone="onDark" size="sm" />
+          </span>
         </div>
       </Demo>
 

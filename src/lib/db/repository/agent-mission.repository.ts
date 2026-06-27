@@ -5,6 +5,7 @@ import {
   deriveMissionSummary,
   getMissionTitleFromPrompt,
 } from '@/lib/agent/missions';
+import { resolveDefaultMissionMode } from '@/lib/agent/safety-defaults';
 import AgentMission, {
   AgentMissionMode,
   AgentMissionStatus,
@@ -207,7 +208,9 @@ export class AgentMissionRepository {
       title: data.title || DEFAULT_MISSION_TITLE,
       summary: data.summary || 'Mission ready to begin.',
       status: data.status || 'draft',
-      mode: data.mode || 'mixed',
+      // OSS safety (H6): supervised by default unless the caller pins a mode or
+      // the deployment opts into the permissive posture.
+      mode: data.mode || resolveDefaultMissionMode(),
       activeAgentId: data.activeAgentId || 'general-agent',
       currentSessionId: data.currentSessionId || '',
       lastActivityAt: new Date(),

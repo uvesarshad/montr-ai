@@ -13,8 +13,11 @@ import { AgentContext } from './types';
 import { agentMissionRepository } from '@/lib/db/repository/agent-mission.repository';
 import { dbConnect } from '@/lib/db/connect';
 import AgentMission from '@/lib/db/models/agent-mission.model';
-import { DEFAULT_MISSION_LIMITS } from '@/lib/db/models/agent-mission.model';
 import { AGENT_DEFINITIONS } from '@/lib/agent/multi-agent/agent-definitions';
+import {
+  resolveDefaultMissionMode,
+  resolveDefaultMissionLimits,
+} from '@/lib/agent/safety-defaults';
 
 const DELEGATABLE_AGENTS = AGENT_DEFINITIONS
   .filter(a => a.id !== 'general-agent')
@@ -91,10 +94,12 @@ export const delegateToAgentTool = {
             title: `[Delegated] ${args.task.slice(0, 80)}`,
             summary: args.task,
             status: 'active',
-            mode: 'mixed',
+            // OSS safety (H6): delegated sub-missions inherit the supervised
+            // default unless the deployment opts into the permissive posture.
+            mode: resolveDefaultMissionMode(),
             activeAgentId: args.agentId,
             limits: {
-              ...DEFAULT_MISSION_LIMITS,
+              ...resolveDefaultMissionLimits(),
               maxCredits: budget,
             },
           });

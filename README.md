@@ -14,7 +14,8 @@ strategy and runs the missions to hit it.
 [The autonomous agent](#-the-autonomous-agent-the-wow) ·
 [BYOK + BYO-app](#-byok--byo-app-the-two-doors) ·
 [Fair-code, not open source](#-fair-code-not-open-source) ·
-[Docs](#-documentation)
+[Docs](#-documentation) ·
+[Support](#-support)
 
 <sub>fair-code · source-available · self-hostable · BYOK + BYO-app</sub>
 
@@ -231,11 +232,21 @@ Sentry + PostHog (both no-op when unset, so self-host ships clean).
 
 ---
 
+## 🆘 Support
+
+**Self-hosting is community-supported only — no SLA, no guarantees, no warranty.** File bugs and feature
+proposals on the issue tracker; an **AI maintainer agent triages first-line** (best-effort, humans confirm
+anything load-bearing). The **managed cloud is the supported path** — that's where SLAs and hands-on
+operational help live. Full details in **[`CONTRIBUTING.md`](CONTRIBUTING.md)** (§ Support model).
+
+---
+
 ## 🤝 Contributing
 
-Contributions are welcome under the SUL. See **[`CONTRIBUTING.md`](CONTRIBUTING.md)** for the workflow and the
-**overlay-boundary rules** (what may never enter the public core), and **[`SECURITY.md`](SECURITY.md)** for
-responsible disclosure.
+Contributions are welcome under the SUL. See **[`CONTRIBUTING.md`](CONTRIBUTING.md)** for the workflow, the
+**overlay-boundary rules** (what may never enter the public core), the **CLA** ([`CLA.md`](CLA.md)), and the
+**license-header expectation** on new source files — plus **[`SECURITY.md`](SECURITY.md)** for responsible
+disclosure.
 
 > **Status:** `CONTRIBUTING.md` and `SECURITY.md` are part of the launch packaging and may not be present in
 > this tree yet.

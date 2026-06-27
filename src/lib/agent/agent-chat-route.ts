@@ -6,6 +6,7 @@ import { deriveMissionSummary, getMissionTitleFromPrompt } from '@/lib/agent/mis
 import { getSession } from '@/lib/agent/multi-agent';
 import { agentMissionRepository } from '@/lib/db/repository/agent-mission.repository';
 import { checkWallClock, terminateMission } from '@/lib/agent/mission-budget';
+import { resolveDefaultMissionMode } from '@/lib/agent/safety-defaults';
 import { applyAiRateLimit } from '@/lib/ai/rate-limit';
 
 export async function handleAgentChatRequest(req: Request) {
@@ -47,7 +48,8 @@ export async function handleAgentChatRequest(req: Request) {
           { role: 'user', content: message },
         ]),
         status: 'active',
-        mode: 'mixed',
+        // OSS safety (H6): supervised by default; permissive env restores 'mixed'.
+        mode: resolveDefaultMissionMode(),
         currentSessionId: sessionState.sessionId,
       });
     } else {

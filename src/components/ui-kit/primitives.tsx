@@ -208,6 +208,53 @@ export function Chip({ tone = 'gray', dot, icon: Icon, onClick, selected, count,
   );
 }
 
+/* --------------------------------------------------------------- BetaBadge */
+
+export type BetaBadgeTone = 'default' | 'onDark';
+export type BetaBadgeSize = 'sm' | 'md';
+
+export interface BetaBadgeProps {
+  /** Visual tone — `onDark` for the dark Rail, `default` (brand tint) elsewhere. */
+  tone?: BetaBadgeTone;
+  /** `sm` for dense nav rows, `md` for page headers. */
+  size?: BetaBadgeSize;
+  /** Override the label (defaults to "Beta"). */
+  label?: string;
+  className?: string;
+}
+
+const BETA_TONES: Record<BetaBadgeTone, string> = {
+  default: 'bg-brand-muted text-brand-strong',
+  onDark: 'bg-white/10 text-white/70',
+};
+
+const BETA_SIZES: Record<BetaBadgeSize, string> = {
+  sm: 'h-[15px] px-1.5 text-[9px]',
+  md: 'h-[18px] px-2 text-[10px]',
+};
+
+/**
+ * BetaBadge — a tiny "Beta" pill for non-launch-critical surfaces.
+ *
+ * Used by the shell (Rail + SubNav) to flag experimental modules; the curated
+ * list lives in `@/components/shell/beta-modules`. Also droppable into a
+ * `PageHeader` title via the `meta`/title slot.
+ */
+export function BetaBadge({ tone = 'default', size = 'md', label = 'Beta', className }: BetaBadgeProps) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full font-semibold uppercase tracking-[0.08em]',
+        BETA_TONES[tone],
+        BETA_SIZES[size],
+        className,
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
 /* --------------------------------------------------------------- Separator */
 
 export type SeparatorProps = React.ComponentPropsWithoutRef<typeof ShadSeparator>;

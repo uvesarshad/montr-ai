@@ -15,7 +15,13 @@
 
 import { connectMongoose } from '@/lib/mongodb';
 import MissionTrigger, { MissionTriggerEventType } from '@/lib/db/models/mission-trigger.model';
+import AgentMission from '@/lib/db/models/agent-mission.model';
 import { agentMissionRepository } from '@/lib/db/repository/agent-mission.repository';
+import {
+  resolveDefaultMissionMode,
+  resolveMaxMissionsPerWindow,
+  MISSION_SPAWN_WINDOW_MS,
+} from '@/lib/agent/safety-defaults';
 import { getMissionTemplateById } from '@/lib/agent/mission-templates';
 import { crmEventBus, type CrmEventType, type CrmEventData } from '@/lib/crm/events';
 import { subscribeDomainEvent, type DomainEventEnvelope, type DomainEventType } from '@/lib/events/domain-bus';
@@ -52,7 +58,7 @@ export function registerMissionTriggerSubscriber(): void {
 
   for (const { crm, trigger } of mappedTypes) {
     crmEventBus.on(crm, async (_eventType: CrmEventType, data: CrmEventData) => {
-      await fireMissionTriggers(trigger, data.entityId, data.metadata);
+      await fireMissionTriggers(trigger, data.userId!, data.entityId, data.metadata);
     });
   }
 
@@ -64,7 +70,7 @@ export function registerMissionTriggerSubscriber(): void {
       const entityId = String(
         payload.contactId ?? payload.conversationId ?? payload.leadId ?? payload.eventId ?? payload.submissionId ?? '',
       );
-      await fireMissionTriggers(trigger, entityId, {
+      await fireMissionTriggers(trigger, env.organizationId ?? "", entityId, {
         ...payload,
         brandId: env.brandId,
       });
@@ -80,6 +86,7 @@ export function registerMissionTriggerSubscriber(): void {
  */
 export async function fireMissionTriggers(
   eventType: MissionTriggerEventType,
+  organizationId: string,
   entityId: string,
   metadata?: Record<string, unknown>,
 ): Promise<void> {
@@ -93,8 +100,27 @@ export async function fireMissionTriggers(
 
     const eventBrandId = metadata?.brandId ? String(metadata.brandId) : null;
 
+    // OSS safety (H6): hard cap on auto-spawned missions per org per rolling
+    // window so a misconfigured (or looping) trigger cannot fan out unbounded
+    // autonomous work. Counted once up-front; we stop spawning once the cap is
+    // hit for this fire.
+    const spawnCap = resolveMaxMissionsPerWindow();
+    let spawnedSoFar = 0;
+    if (triggers.length > 0) {
+      spawnedSoFar = await AgentMission.countDocuments({
+        createdAt: { $gte: new Date(Date.now() - MISSION_SPAWN_WINDOW_MS) },
+      }).exec();
+    }
+
     for (const trigger of triggers) {
       try {
+        if (spawnedSoFar >= spawnCap) {
+          console.warn(
+            `[MissionTrigger] Spawn cap reached for org ${organizationId} ` +
+              `(${spawnedSoFar}/${spawnCap} in ${MISSION_SPAWN_WINDOW_MS}ms) — skipping ${eventType}`,
+          );
+          break;
+        }
         // Brand scoping: when the event carries a brandId, only triggers on
         // that brand fire (org-wide events fire every brand's triggers).
         if (eventBrandId && trigger.brandId && trigger.brandId !== eventBrandId) continue;
@@ -121,7 +147,7 @@ export async function fireMissionTriggers(
         else if (metadata?.botHandled) contextBits.push('NOTE: an AI bot handles this conversation — do not double-reply; act on follow-ups outside the thread');
         const summary = `${template?.summary ?? 'Event-triggered mission.'} [${contextBits.join(' · ')}]`;
 
-        const mode = trigger.missionMode ?? 'mixed';
+        const mode = trigger.missionMode ?? resolveDefaultMissionMode();
 
         const mission = await agentMissionRepository.create({
           brandId: trigger.brandId,
@@ -146,6 +172,8 @@ export async function fireMissionTriggers(
             iteration: 0,
           }, 1000);
         }
+
+        spawnedSoFar += 1;
 
         await MissionTrigger.findByIdAndUpdate(trigger._id, {
           $inc: { triggerCount: 1 },

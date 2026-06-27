@@ -11,6 +11,7 @@
 
 import { Types } from 'mongoose';
 import { connectMongoose } from '@/lib/mongodb';
+import { toObjectId } from '@/lib/utils/object-id';
 import {
   ApprovalRequest,
   IApprovalRequest,
@@ -43,10 +44,10 @@ export async function createApproval(input: CreateApprovalInput): Promise<IAppro
     { subjectKind: input.subjectKind, subjectId: input.subjectId },
     {
       $set: {
-        brandId: input.brandId ? new Types.ObjectId(String(input.brandId)) : undefined,
+        brandId: toObjectId(input.brandId) ?? undefined,
         subjectSummary: input.subjectSummary,
-        submittedBy: new Types.ObjectId(String(input.submittedBy)),
-        assignee: input.assignee ? new Types.ObjectId(String(input.assignee)) : undefined,
+        submittedBy: toObjectId(input.submittedBy)!,
+        assignee: toObjectId(input.assignee) ?? undefined,
         priority: input.priority ?? 'normal',
         status: 'pending' as ApprovalStatus,
         expiresAt: input.expiresAt,
@@ -89,10 +90,10 @@ export async function listApprovals(filter: ListApprovalsFilter): Promise<IAppro
   await connectMongoose();
   const q: Record<string, unknown> = {
 };
-  if (filter.brandId) q.brandId = new Types.ObjectId(String(filter.brandId));
+  if (filter.brandId) q.brandId = toObjectId(filter.brandId);
   if (filter.subjectKind) q.subjectKind = filter.subjectKind;
   if (filter.status) q.status = filter.status;
-  if (filter.assignee) q.assignee = new Types.ObjectId(String(filter.assignee));
+  if (filter.assignee) q.assignee = toObjectId(filter.assignee);
   return ApprovalRequest.find(q)
     .sort({ priority: -1, createdAt: -1 })
     .limit(filter.limit ?? 50)
@@ -123,7 +124,7 @@ export async function decideApproval(input: DecideApprovalInput): Promise<IAppro
     {
       $set: {
         status: input.decision,
-        reviewedBy: new Types.ObjectId(String(input.reviewedBy)),
+        reviewedBy: toObjectId(input.reviewedBy)!,
         reviewedAt: new Date(),
         reviewNote: input.reviewNote,
         decisionData: input.decisionData,

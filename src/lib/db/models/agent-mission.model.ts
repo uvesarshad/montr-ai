@@ -1,4 +1,8 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
+import {
+  resolveDefaultMissionMode,
+  resolveDefaultMissionLimits,
+} from '@/lib/agent/safety-defaults';
 
 export type AgentMissionStatus =
   | 'draft'
@@ -135,7 +139,10 @@ const AgentMissionSchema = new Schema<IAgentMission>(
     mode: {
       type: String,
       enum: ['mixed', 'approval-first', 'autonomous', 'watch', 'autopilot'],
-      default: 'mixed',
+      // OSS safety (H6): a fresh self-host install defaults to a SUPERVISED mode
+      // (approval-first) so consequential/outbound actions require human approval
+      // out-of-the-box. Opt out via MONTRAI_AGENT_AUTONOMY=permissive (cloud).
+      default: () => resolveDefaultMissionMode(),
     },
     activeAgentId: { type: String, default: 'general-agent' },
     currentSessionId: { type: String, default: '' },
@@ -145,11 +152,14 @@ const AgentMissionSchema = new Schema<IAgentMission>(
     eventCount: { type: Number, default: 0 },
     lastActivityAt: { type: Date, default: Date.now, index: true },
     limits: {
-      maxToolCalls: { type: Number, default: DEFAULT_MISSION_LIMITS.maxToolCalls },
-      maxTokens: { type: Number, default: DEFAULT_MISSION_LIMITS.maxTokens },
-      maxWallClockMs: { type: Number, default: DEFAULT_MISSION_LIMITS.maxWallClockMs },
-      maxCredits: { type: Number, default: DEFAULT_MISSION_LIMITS.maxCredits },
-      maxRetriesPerTool: { type: Number, default: DEFAULT_MISSION_LIMITS.maxRetriesPerTool },
+      // OSS safety (H6): conservative per-mission spend + rate caps by default;
+      // resolved at create-time so MONTRAI_AGENT_AUTONOMY=permissive (cloud)
+      // restores the generous caps.
+      maxToolCalls: { type: Number, default: () => resolveDefaultMissionLimits().maxToolCalls },
+      maxTokens: { type: Number, default: () => resolveDefaultMissionLimits().maxTokens },
+      maxWallClockMs: { type: Number, default: () => resolveDefaultMissionLimits().maxWallClockMs },
+      maxCredits: { type: Number, default: () => resolveDefaultMissionLimits().maxCredits },
+      maxRetriesPerTool: { type: Number, default: () => resolveDefaultMissionLimits().maxRetriesPerTool },
     },
     usage: {
       toolCalls: { type: Number, default: 0 },

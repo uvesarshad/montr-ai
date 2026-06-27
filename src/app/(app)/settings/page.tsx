@@ -35,7 +35,8 @@ import { BrandMemoryView } from '@/components/settings/brand-memory-view';
 import { CrmSettingsView } from '@/components/settings/crm-settings-view';
 import { OrgVariablesView } from '@/components/settings/org-variables-view';
 import { SocialApprovalPolicyView } from '@/components/settings/social-approval-policy-view';
-import { BrainCircuit, Brain, ShieldCheck } from 'lucide-react';
+import { TelemetryPrivacyView } from '@/components/settings/telemetry-privacy-view';
+import { BrainCircuit, Brain, ShieldCheck, Shield } from 'lucide-react';
 import { TwoFactorAuth } from '@/components/settings/two-factor-auth';
 import { useSession } from '@/lib/auth-client';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -54,6 +55,7 @@ const NAV_ITEMS = [
   { value: 'features', label: 'Feature Access', icon: Sparkles },
   { value: 'support', label: 'Support', icon: HelpCircle },
   { value: 'notifications', label: 'Notifications', icon: Bell },
+  { value: 'privacy', label: 'Privacy', icon: Shield },
 ] as const;
 
 const navTriggerClass =
@@ -987,6 +989,11 @@ function SettingsContent() {
             {/* Notifications Tab */}
             <TabsContent value="notifications" className="space-y-3 mt-0">
               <NotificationsTabContent />
+            </TabsContent>
+
+            {/* Privacy & Telemetry Tab */}
+            <TabsContent value="privacy" className="space-y-3 mt-0">
+              <TelemetryPrivacyView />
             </TabsContent>
 
             {/* Brand Memory Tab */}

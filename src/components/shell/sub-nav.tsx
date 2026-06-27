@@ -23,9 +23,10 @@ import { usePathname } from 'next/navigation';
 import { ChevronDown, ChevronsLeft, Zap } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { Button, IconButton } from '@/components/ui-kit';
+import { Button, IconButton, BetaBadge } from '@/components/ui-kit';
 import type { ModuleRailGroup, ModuleRailItem } from '@/components/shell/module-shell';
 import type { SubnavConfig } from './subnav-registry';
+import { isBetaModule } from './beta-modules';
 import { useShell } from './shell-context';
 import { useSubnavBadges, type SubnavBadgeCounts } from './use-subnav-badges';
 
@@ -184,6 +185,7 @@ export function SubNav({ config }: { config: SubnavConfig }) {
         <span className="whitespace-nowrap text-[14.5px] font-semibold tracking-[-0.02em] text-foreground">
           {config.title}
         </span>
+        {isBetaModule(config.match) ? <BetaBadge size="sm" /> : null}
         <IconButton
           icon={ChevronsLeft}
           iconSize={16}

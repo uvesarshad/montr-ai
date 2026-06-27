@@ -72,9 +72,9 @@ Open an issue to discuss the right extension point instead.
 
 ## 3. Contributor License Agreement (CLA)
 
-All contributions require a signed **Contributor License Agreement**. This lets the project
-maintain the fair-code licensing model (including the dual public-core / private-overlay structure)
-on a sound legal footing.
+All contributions require a signed **Contributor License Agreement** — see [`CLA.md`](./CLA.md) for
+the full terms. This lets the project maintain the fair-code licensing model (including the dual
+public-core / private-overlay structure) on a sound legal footing.
 
 - You do **not** need to sign anything in advance.
 - On your **first PR**, the **CLA bot** will post a comment with a link to sign.
@@ -91,7 +91,11 @@ Every PR must pass, before any human can merge it:
 2. **Overlay-boundary guard** — fails any PR that adds or imports a commercial-overlay surface
    (see §2): billing, gateway/broker, white-label, SSO, advanced-RBAC, managed-AI, cloud ops.
 3. **Green gates** — `typecheck` + `lint` + `vitest`.
-4. **License-header check** on new source files.
+4. **License-header check** on new source files. **Every new source file must carry the project
+   license header** (a short SPDX-style banner identifying it as MontrAI under the n8n Sustainable
+   Use License). Copy the header from an existing sibling file in the same directory; if your editor
+   strips it, the check will flag the PR. Don't invent a different license notice — the SUL banner is
+   the only accepted header.
 5. **CLA check** (see §3).
 
 ---
@@ -99,16 +103,25 @@ Every PR must pass, before any human can merge it:
 ## 5. Support model — please read before opening a support request
 
 > **Self-hosting MontrAI is community-supported only. There are no support guarantees, no SLA, and
-> no warranty of any kind.**
+> no warranty of any kind. The managed cloud is the supported path — self-host is best-effort.**
 
+- **Two tiers, one is supported.** Self-host runs on *community support* (this issue tracker,
+  best-effort, no commitments). The **managed cloud** is the **supported path**: it is where SLAs,
+  guaranteed response times, and hands-on operational help exist. If uptime or response guarantees
+  matter to you, use the cloud rather than self-hosting.
 - This repository's issue tracker is for **bugs and feature proposals**, not for hands-on
-  hosting/operations help.
-- The **AI maintainer agent is the first-line responder**. It triages, labels, and drafts replies.
-  It is helpful but **unproven** — treat its responses as best-effort, not authoritative.
-- Maintainer time is finite and triaged. A clear, minimal, reproducible report is the single best
-  way to get a real fix landed quickly.
-- If you need guaranteed support, SLAs, or operational help, that is a **commercial/cloud** offering,
-  not part of the fair-code self-host package.
+  hosting/operations help, "it won't start on my server" debugging, or one-on-one consulting.
+- The **AI maintainer agent is the first-line responder**. It triages, labels, and drafts replies
+  on every new issue and PR — expect its reply *first*, often within minutes. It is helpful but
+  **unproven**: treat its responses as best-effort, not authoritative, and a human confirms anything
+  load-bearing.
+- **Triage expectations.** Issues are triaged on a best-effort basis with **no committed response
+  time**. Well-scoped, reproducible bug reports and focused PRs get attention first; vague reports,
+  feature-bundles, and "please help me set this up" threads may be closed or relabeled without a
+  detailed reply. A clear, minimal, reproducible report is the single best way to get a real fix
+  landed quickly.
+- If you need guaranteed support, SLAs, or operational help, that is the **commercial/cloud**
+  offering — not part of the fair-code self-host package.
 
 When you file a bug, include: what you expected, what happened, exact repro steps, your environment
 (OS, Node version, how you're running it — e.g. `docker compose`), and relevant logs with secrets

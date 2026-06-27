@@ -47,7 +47,8 @@ import { cn } from '@/lib/utils';
 import { isRouteActive } from '@/lib/navigation/route-match';
 import { getUserAvatar } from '@/lib/avatar-utils';
 import { useProfile } from '@/hooks/use-profile';
-import { Avatar } from '@/components/ui-kit';
+import { Avatar, BetaBadge } from '@/components/ui-kit';
+import { isBetaModule } from './beta-modules';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -195,6 +196,12 @@ export function Rail() {
                         <span className="size-1.5 rounded-full bg-emerald-500" />
                         Live
                       </span>
+                    ) : isBetaModule(item.href) ? (
+                      <BetaBadge
+                        tone="onDark"
+                        size="sm"
+                        className="mr-3 shrink-0 opacity-0 transition-opacity group-hover/rail:opacity-100"
+                      />
                     ) : null}
                   </Link>
                 );

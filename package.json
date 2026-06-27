@@ -1,6 +1,6 @@
 {
   "name": "montr-ai-canvas",
-  "version": "0.7.1",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "node server.js",
@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "next:version": "next --version",
     "worker": "tsx scripts/workflow-worker.ts",
     "voice-ws": "node server/voice-ws.js",

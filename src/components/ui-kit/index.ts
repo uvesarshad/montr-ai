@@ -27,6 +27,7 @@ export {
   RateBar,
   Spinner,
   Separator,
+  BetaBadge,
 } from './primitives';
 export type {
   ButtonProps,
@@ -47,6 +48,9 @@ export type {
   RateBarProps,
   SpinnerProps,
   SeparatorProps,
+  BetaBadgeProps,
+  BetaBadgeTone,
+  BetaBadgeSize,
 } from './primitives';
 
 // surfaces

@@ -1,7 +1,8 @@
 name: CI
 
 # Public-repo CI for the MontrAI fair-code core.
-# Lanes: lint, typecheck, test (vitest), secret-scan (gitleaks).
+# Required pipeline (fail-fast, in order): lint → typecheck → test (vitest) →
+# secret-scan (gitleaks) → overlay-boundary guard. Any red job blocks merge.
 # NO deploy secrets live here — deployment is handled out-of-band
 # (see .github/workflows-disabled/deploy.yml on the private surface).
 
@@ -38,7 +39,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Run ESLint
         run: npm run lint
@@ -46,6 +47,8 @@ jobs:
   typecheck:
     name: Typecheck (tsc --noEmit)
     runs-on: ubuntu-latest
+    # Gate behind lint so a basic-hygiene failure short-circuits the pipeline.
+    needs: lint
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,7 +60,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Run TypeScript typecheck
         run: npm run typecheck
@@ -65,6 +68,7 @@ jobs:
   test:
     name: Unit tests (vitest)
     runs-on: ubuntu-latest
+    needs: typecheck
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,10 +80,66 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Run vitest
         run: npm run test
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so gitleaks can scan every commit on the PR/branch.
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          # Explicit config = the committed allowlist (audited false positives).
+          # gitleaks-action also auto-discovers <repo-root>/.gitleaks.toml, but
+          # pin it so the gate can never silently fall back to bare defaults.
+          GITLEAKS_CONFIG: .gitleaks.toml
+          # No GITLEAKS_LICENSE needed for public repos.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  overlay-boundary:
+    name: Overlay-boundary guard (G5)
+    runs-on: ubuntu-latest
+    needs: secret-scan
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Assert no commercial/overlay code in the public core
+        run: |
+          set -euo pipefail
+          fail=0
+
+          # G5: the public core must never statically import an overlay/commercial path.
+          if grep -RInE "from ['\"](@overlay/|\.{1,}(/\.\.)*/overlay/|overlay/)" \
+               --include='*.ts' --include='*.tsx' --include='*.js' --include='*.mjs' \
+               src 2>/dev/null; then
+            echo "::error::Public core imports an overlay/commercial path — overlay-boundary guard (G5) failed."
+            fail=1
+          fi
+
+          # The commercial overlay (ee/billing/gateway) is private — it must not
+          # appear in the public tree.
+          for d in ee overlay src/overlay packages/overlay; do
+            if [ -d "$d" ]; then
+              echo "::error::Commercial/overlay directory '$d' present in public tree — not allowed in the OSS core."
+              fail=1
+            fi
+          done
+
+          if [ "$fail" -ne 0 ]; then
+            exit 1
+          fi
+          echo "Overlay-boundary guard passed — public core is clean."
 
   e2e:
     name: E2E (Playwright)
@@ -94,19 +154,3 @@ jobs:
       # so the required-check name is stable and reviewers see the slot.
       - name: E2E placeholder
         run: echo "E2E suite not wired yet — tracked by C3 in the OSS execution plan."
-
-  secret-scan:
-    name: Secret scan (gitleaks)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          # Full history so gitleaks can scan every commit on the PR/branch.
-          fetch-depth: 0
-
-      - name: Run gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          # No GITLEAKS_LICENSE needed for public repos.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

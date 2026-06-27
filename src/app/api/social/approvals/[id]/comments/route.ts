@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/get-session';
 import { postApprovalRepository } from '@/lib/db/repository/post-approval.repository';
 import { userRepository } from '@/lib/db/repository/user.repository';
+import { idsEqual } from '@/lib/utils/object-id';
 
 /**
  * POST /api/social/approvals/[id]/comments
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
 
         // Only org admins or the submitter may comment.
         const isAdmin = user.role === 'admin' || user.role === 'super_admin';
-        const isSubmitter = existing.submittedBy === user._id.toString();
+        const isSubmitter = idsEqual(existing.submittedBy, user._id);
         if (!isAdmin && !isSubmitter) {
             return NextResponse.json({ error: 'Access denied' }, { status: 403 });
         }

@@ -20,6 +20,7 @@
 
 import crypto from 'node:crypto';
 import AgentControlBinding, { IAgentControlBinding } from '@/lib/db/models/agent-control-binding.model';
+import { resolveDefaultMissionMode } from '@/lib/agent/safety-defaults';
 import type { IWhatsAppAccount } from '@/lib/db/models/whatsapp-account.model';
 import { dbConnect } from '@/lib/db/connect';
 
@@ -327,7 +328,9 @@ async function executeCommand(
                 title: command.text.length > 60 ? `${command.text.slice(0, 57)}…` : command.text,
                 summary: `Goal issued via WhatsApp control: ${command.text}`,
                 status: 'active',
-                mode: 'mixed', // Never autonomous from chat (design rule).
+                // Never autonomous from chat (design rule); OSS safety (H6)
+                // makes this supervised by default — permissive env restores 'mixed'.
+                mode: resolveDefaultMissionMode(),
                 activeAgentId: 'strategy-agent',
             });
             await audit(binding, `goal: ${command.text.slice(0, 120)}`);
