@@ -78,15 +78,17 @@ ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} \
 # next build`. Fails the image if the tree is not typecheck/lint clean.
 RUN npm run build
 
-# Drop devDependencies from node_modules for the runtime image, then re-add the
-# devDeps the RUNTIME still needs (they are not in `dependencies`):
+# Keep the FULL node_modules in the runtime image (no prune). The runtime
+# genuinely needs several devDependencies that are NOT in `dependencies`:
+#   * `typescript` — `server.js` boots Next, which loads + transpiles
+#     `next.config.ts` ON STARTUP; without it Next auto-installs typescript on
+#     boot and crashes (offline / behind a TLS proxy: "Failed to load
+#     next.config.ts").
 #   * `tsx`        — the worker runs `tsx scripts/workflow-worker.ts`.
-#   * `typescript` — `server.js` boots Next, which loads `next.config.ts` (a TS
-#     config) and transpiles it ON STARTUP; without `typescript` present Next
-#     tries to auto-install it at boot and crashes (offline / behind a TLS proxy).
-# `cross-env` is only a build/start-script helper; runtime calls node/tsx directly.
-RUN npm prune --omit=dev \
-  && npm install --no-save tsx@^4.22.3 typescript@^5.8.2
+# Pruning then re-adding only these proved unreliable (npm skips named devDeps
+# after `prune --omit=dev`, and `--include=dev` re-adds the entire dev tree
+# anyway, so the prune saves nothing). The runner stage copies the builder's
+# node_modules verbatim. cross-env is build-only; runtime calls node/tsx directly.
 
 # -----------------------------------------------------------------------------
 # Stage 3 — runner: lean runtime with ffmpeg.
