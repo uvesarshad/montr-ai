@@ -56,7 +56,7 @@ COPY . .
 ENV NODE_ENV=production
 # Telemetry off; allow large builds (next build is memory-hungry).
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS=--max-old-space-size=4096
+ENV NODE_OPTIONS=--max-old-space-size=8192
 # TLS-intercepting corporate networks: next/font (Google Fonts fetch) + Mongo SRV
 # fail without the system CA bundle. The base is Node 24, so `--use-system-ca`
 # (Node >= 22) is available — it is left OFF by default (clean public registries
