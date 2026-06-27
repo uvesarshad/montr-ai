@@ -18,7 +18,7 @@
 # carry the full (pruned to production where possible) node_modules into the runner.
 # =============================================================================
 
-ARG NODE_VERSION=20-bookworm-slim
+ARG NODE_VERSION=24-bookworm-slim
 
 # -----------------------------------------------------------------------------
 # Stage 1 — deps: install all dependencies (dev + prod) for building.
@@ -55,9 +55,9 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS=--max-old-space-size=4096
 # TLS-intercepting corporate networks: next/font (Google Fonts fetch) + Mongo SRV
-# fail without the system CA bundle. `--use-system-ca` requires Node >= 22, so it
-# is NOT baked into NODE_OPTIONS here (base is Node 20) — it would abort the
-# build. To build on such a network: bump NODE_VERSION to a 22+ slim tag and pass
+# fail without the system CA bundle. The base is Node 24, so `--use-system-ca`
+# (Node >= 22) is available — it is left OFF by default (clean public registries
+# don't need it) but you can enable it on such a network with
 # `--build-arg EXTRA_NODE_OPTIONS=--use-system-ca`. (Build map §2.)
 ARG EXTRA_NODE_OPTIONS=""
 ENV NODE_OPTIONS="${NODE_OPTIONS} ${EXTRA_NODE_OPTIONS}"
