@@ -120,9 +120,12 @@ export function AgentShell() {
   const { setHeaderInfo } = useAppHeader();
   const { currentBrandId: globalBrandId } = useCurrentBrand();
   const { replace } = useRouter();
-  const { get: getSearchParam } = useSearchParams();
-  const prompt = getSearchParam('prompt') ?? '';
-  const queryMissionId = getSearchParam('missionId') ?? '';
+  // NB: do NOT destructure `get` off useSearchParams() — it's a native
+  // URLSearchParams method and calling it detached throws "Illegal invocation"
+  // (crashes the whole agent shell). Keep the object and call the method on it.
+  const searchParams = useSearchParams();
+  const prompt = searchParams.get('prompt') ?? '';
+  const queryMissionId = searchParams.get('missionId') ?? '';
 
   const [messages, setMessages] = useState<CoreMessage[]>([]);
   const [input, setInput] = useState('');
@@ -406,7 +409,9 @@ export function AgentShell() {
   const handleApproveAction = async (approvalId: string) => {
     try {
       await fetch(`/api/v2/agent/approvals/${approvalId}/approve`, { method: 'POST' });
-      await refreshMissionContext();
+      // Refresh both context (approval status) and the event stream — approving a
+      // strategy activation re-dispatches the mission and spawns follow-up events.
+      await Promise.all([refreshMissionContext(), refreshMission()]);
     } catch (error) {
       console.error('Failed to approve action:', error);
     }
@@ -415,11 +420,19 @@ export function AgentShell() {
   const handleRejectAction = async (approvalId: string) => {
     try {
       await fetch(`/api/v2/agent/approvals/${approvalId}/reject`, { method: 'POST' });
-      await refreshMissionContext();
+      await Promise.all([refreshMissionContext(), refreshMission()]);
     } catch (error) {
       console.error('Failed to reject action:', error);
     }
   };
+
+  // Map PendingAgentAction id → status so the inline strategy activation card can
+  // reflect the resolved state instead of showing stale Approve/Reject buttons.
+  const approvalStatusById = useMemo(() => {
+    const map: Record<string, (typeof missionApprovals)[number]['status']> = {};
+    for (const approval of missionApprovals) map[approval._id] = approval.status;
+    return map;
+  }, [missionApprovals]);
 
   const handleToggleTask = async (taskId: string, currentStatus: string) => {
     const nextStatus = currentStatus === 'active' ? 'paused' : 'active';
@@ -586,6 +599,10 @@ export function AgentShell() {
         activeBrand={activeBrand}
         userTurns={userTurns}
         userInitials={userInitials}
+        onSendMessage={(text) => void submitMessage(text)}
+        onApproveAction={(id) => handleApproveAction(id)}
+        onRejectAction={(id) => handleRejectAction(id)}
+        approvalStatusById={approvalStatusById}
       />
 
       {isContextOpen ? (

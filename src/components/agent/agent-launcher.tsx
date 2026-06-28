@@ -135,10 +135,19 @@ export function AgentLauncher() {
 
   useEffect(() => {
     const handleOpenAgent = (event: Event) => {
-      const customEvent = event as CustomEvent<{ prompt?: string }>;
+      const customEvent = event as CustomEvent<{ prompt?: string; brandId?: string }>;
       if (hasLoadedBrands && brands.length === 0) {
         push(buildAgentBrandSetupHref({ returnTo: '/agent' }));
         return;
+      }
+
+      // Pin the requested brand (e.g. the just-onboarded brand) so the strategy
+      // tools run against the right brand context — the asset-bridge fix.
+      const requestedBrandId = customEvent.detail?.brandId;
+      if (requestedBrandId) {
+        setActiveBrandId(requestedBrandId);
+        localStorage.setItem('agent-brand-id', requestedBrandId);
+        localStorage.setItem('copilot-brand-id', requestedBrandId);
       }
 
       setIsOpen(true);

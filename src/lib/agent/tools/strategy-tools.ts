@@ -24,6 +24,8 @@ import { instantiateRoadmap, iterateStrategy } from '@/lib/strategy/instantiate'
 import { strategyRepository } from '@/lib/db/repository/strategy.repository';
 import { writeWorkspaceDoc } from '@/lib/agent/workspace';
 import type { IStrategy } from '@/lib/db/models/strategy.model';
+import type { RoadmapEntry } from '@/lib/db/models/strategy-roadmap.model';
+import { buildStrategyDraftArtifact, buildStrategyActivationArtifact } from '@/lib/strategy/artifacts';
 
 function summarizeStrategy(strategy: IStrategy) {
     return {
@@ -132,6 +134,7 @@ export const generateStrategyTool = {
                     confidence,
                     message: `${confidence ? `${confidence} ` : ''}Present it to the user; call activate_strategy when they want it executed (that will request approval).`,
                     deepLink: `/agent/strategies/${(strategy._id as { toString(): string }).toString()}`,
+                    artifact: buildStrategyDraftArtifact(strategy),
                 };
             } catch (error) {
                 return { success: false, error: error instanceof Error ? error.message : String(error) };
@@ -192,6 +195,30 @@ export const activateStrategyTool = {
     description: 'THE one-approval step of Goal Mode: decompose the strategy into a dependency-ordered roadmap, spawn a mission for every unblocked entry, and mark the strategy active. Requires user approval — the approval card is the user\'s sign-off on executing the whole strategy.',
     parameters: activateStrategyParams,
     hitlPolicy: 'always' as const,
+    /**
+     * Gated-path preview: when the approval card is raised we decompose the
+     * strategy (idempotent — the approved execute reuses this roadmap) and
+     * attach a dry-run roadmap summary so the user sees what activation will do
+     * before signing off.
+     */
+    buildApprovalArtifact: async (
+        args: Record<string, unknown>,
+        context: AgentContext,
+        pendingActionId: string,
+    ) => {
+        const strategyId = String(args.strategyId ?? '');
+        if (!strategyId || !context.brandId) return undefined;
+        const strategy = await strategyRepository.findById(strategyId);
+        if (!strategy) return undefined;
+
+        const decomposed = await decomposeStrategy(strategyId, {
+            orgId: context.userId,
+            brandId: context.brandId,
+            userId: context.userId,
+        });
+        const entries = (decomposed.roadmap as RoadmapEntry[]) ?? [];
+        return buildStrategyActivationArtifact({ strategyId, pendingActionId, entries });
+    },
     factory: (context: AgentContext) => tool({
         description: 'Decompose a strategy and spawn its missions (gated).',
         parameters: activateStrategyParams,
@@ -309,6 +336,7 @@ export const iterateStrategyTool = {
                     validationStatus: (newStrategy as IStrategy).validation?.status,
                     confidence,
                     message: `${confidence ? `${confidence} ` : ''}New version generated from performance data. Call activate_strategy to decompose it into missions (requires approval).`,
+                    artifact: buildStrategyDraftArtifact(newStrategy as IStrategy, { parentVersion: strategy.version }),
                 };
             } catch (error) {
                 return { success: false, error: error instanceof Error ? error.message : String(error) };

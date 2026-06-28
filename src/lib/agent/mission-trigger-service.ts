@@ -70,7 +70,7 @@ export function registerMissionTriggerSubscriber(): void {
       const entityId = String(
         payload.contactId ?? payload.conversationId ?? payload.leadId ?? payload.eventId ?? payload.submissionId ?? '',
       );
-      await fireMissionTriggers(trigger, env.organizationId ?? "", entityId, {
+      await fireMissionTriggers(trigger, env.organizationId ?? '', entityId, {
         ...payload,
         brandId: env.brandId,
       });

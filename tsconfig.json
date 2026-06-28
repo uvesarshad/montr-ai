@@ -41,8 +41,10 @@
     "**/*.test.ts",
     "**/*.spec.ts",
     "vitest.config.ts",
+    "vitest.integration.config.ts",
     "playwright.config.ts",
     "tests/e2e",
+    "tests/integration",
     "scripts/oss-generate"
   ]
 }

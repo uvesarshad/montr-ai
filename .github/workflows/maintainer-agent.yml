@@ -1,0 +1,82 @@
+name: AI Maintainer Agent
+
+# Scheduled AI maintainer routine for the public fair-code core (master plan §3.6).
+# The full routine + the exact prompt the agent runs live in docs/MAINTAINER-AGENT.md.
+#
+# DORMANT BY DEFAULT. Every action step is gated on the repo variable
+# `ENABLE_AI_MAINTAINER == 'true'` AND the `ANTHROPIC_API_KEY` secret. Until an
+# operator opts in, this workflow is a harmless no-op that just prints a pointer to
+# the runbook — it never produces noisy red scheduled runs. The agent NEVER merges;
+# it triages, labels, reviews PRs against the hard CI gates, and drafts replies. A
+# human approves every merge (the agent proposes; the gates dispose).
+#
+# To activate (operator, opt-in):
+#   1. Set repo variable  ENABLE_AI_MAINTAINER = true   (Settings → Variables)
+#   2. Add repo secret    ANTHROPIC_API_KEY = sk-ant-…  (Settings → Secrets)
+#   3. Uncomment the "Run the maintainer agent" step below and pin an action SHA.
+
+on:
+  schedule:
+    # Twice on weekdays (09:00 + 17:00 UTC). Low-volume early — adjust as needed.
+    - cron: '0 9,17 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Optional focus for this run (e.g. "triage only", "review PR #12").'
+        required: false
+        default: ''
+
+# Least privilege the agent needs WHEN enabled (label issues, comment/review PRs).
+# Dormant runs use none of it. The agent has NO merge/push permission by design.
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: maintainer-agent
+  cancel-in-progress: false
+
+jobs:
+  maintainer:
+    name: Maintainer routine
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dormant check
+        id: gate
+        run: |
+          if [ "${{ vars.ENABLE_AI_MAINTAINER }}" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "AI maintainer is ENABLED — proceeding."
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "AI maintainer is DORMANT (repo var ENABLE_AI_MAINTAINER != 'true')."
+            echo "Routine + activation steps: docs/MAINTAINER-AGENT.md. No-op this run."
+          fi
+
+      - name: Checkout
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+
+      # ── STUB: wire the real agent here when activating ───────────────────────
+      # The agent runs the prompt/checklist in docs/MAINTAINER-AGENT.md §3 with the
+      # gh CLI (issues/PRs) available via GITHUB_TOKEN. Pin a specific action SHA
+      # when you uncomment. Example (Anthropic's Claude Code action):
+      #
+      # - name: Run the maintainer agent
+      #   if: steps.gate.outputs.enabled == 'true'
+      #   uses: anthropics/claude-code-action@<pinned-sha>
+      #   with:
+      #     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+      #     # Feed the runbook prompt (docs/MAINTAINER-AGENT.md §3) as the instruction.
+      #     prompt_file: docs/MAINTAINER-AGENT.md
+      #     # The agent must NEVER merge — keep merge perms off the token.
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Reminder (enabled but agent step not wired)
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          echo "::notice::ENABLE_AI_MAINTAINER is true but the agent step is still the stub."
+          echo "Uncomment + pin the 'Run the maintainer agent' step in this workflow to go live."
+          echo "See docs/MAINTAINER-AGENT.md §4."

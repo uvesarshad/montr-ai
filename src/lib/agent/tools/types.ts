@@ -37,4 +37,15 @@ export interface RegisteredTool<T extends z.ZodTypeAny = z.ZodTypeAny, R = unkno
     /** Declared HITL policy for this tool. Per-brand hitlOverrides in AgentContext take precedence. */
     hitlPolicy?: HitlPolicy;
     factory: ToolFactory<T, R>;
+    /**
+     * Optional preview builder invoked when this tool's call is HITL-gated.
+     * Lets a tool attach a structured `artifact` to the awaiting-approval result
+     * (e.g. a strategy roadmap preview) so the chat can render an approval card.
+     * Failures are swallowed by the registry — the gate still works without it.
+     */
+    buildApprovalArtifact?: (
+        args: Record<string, unknown>,
+        context: AgentContext,
+        pendingActionId: string,
+    ) => Promise<unknown> | unknown;
 }

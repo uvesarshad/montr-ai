@@ -72,10 +72,22 @@ class ToolRegistry {
                     });
 
                     if (hitl.requiresApproval) {
+                        // Let the tool attach a structured preview artifact to the
+                        // approval card (e.g. strategy roadmap dry-run). Best-effort.
+                        let approvalArtifact: unknown;
+                        if (typeof tool.buildApprovalArtifact === 'function' && hitl.pendingActionId) {
+                            approvalArtifact = await Promise.resolve(
+                                tool.buildApprovalArtifact(argsObj, context, hitl.pendingActionId),
+                            ).catch((error) => {
+                                console.error(`[ToolRegistry] buildApprovalArtifact failed for ${name}:`, error);
+                                return undefined;
+                            });
+                        }
                         return {
                             status: 'awaiting_approval',
                             pendingActionId: hitl.pendingActionId,
                             message: hitl.message,
+                            ...(approvalArtifact ? { artifact: approvalArtifact } : {}),
                         };
                     }
 

@@ -28,9 +28,9 @@ import {
   buildDecomposeRoadmapPrompt,
 } from './prompts/generate-strategy';
 import { getConnectedChannels } from './connected-channels';
-import { formatBandsForPrompt } from './benchmarks';
 import { validateStrategy, type ValidateContext, type ValidationResult } from './validate';
 import { critiqueStrategy, type CritiqueResult } from './critic';
+import { resolveBrainProvider, type BrainContext } from '@/lib/agent/brain';
 
 export interface GenerateStrategyInput {
   orgId: string;
@@ -80,17 +80,18 @@ async function fetchBrandContext(brandId: string, orgId: string) {
 
 // ─── Validation pipeline helpers ───────────────────────────────────────────
 
-/** One task-routed strategy LLM call. Centralizes model routing so repair /
- *  revise / reformulation never hardcode a model. */
+/** One task-routed strategy LLM call. Model routing resolves through the
+ *  injectable brain (generic core wraps AISettingsService) so repair / revise /
+ *  reformulation never hardcode a model and an overlay can tune the model
+ *  without touching this code. */
 async function callStrategyModel(opts: {
   system: string;
   user: string;
-  userId: string;
+  ctx: BrainContext;
   temperature?: number;
   maxTokens?: number;
 }): Promise<string> {
-  const { AISettingsService } = await import('@/lib/services/ai-settings.service');
-  const pref = await AISettingsService.getPreferredModel(opts.userId, 'agentStrategy');
+  const pref = await resolveBrainProvider().getPreferredModel(opts.ctx, 'agentStrategy');
   return generateTextWithClient({
     model: pref.modelId,
     system: opts.system,
@@ -158,7 +159,7 @@ async function reformulateGoal(opts: {
   rawGoal: string;
   brandSummary: string;
   benchmarkText: string;
-  userId: string;
+  ctx: BrainContext;
 }): Promise<string> {
   try {
     const system =
@@ -167,7 +168,7 @@ async function reformulateGoal(opts: {
       '"rationale": string, "assumed": boolean}. If the user gave no numbers, propose a sensible ' +
       'target grounded in the provided benchmark ranges and set "assumed": true.';
     const user = `Raw goal: "${opts.rawGoal}"\nBrand: ${opts.brandSummary}\n${opts.benchmarkText}\nReturn the measurable goal as JSON.`;
-    const raw = await callStrategyModel({ system, user, userId: opts.userId, temperature: 0.2, maxTokens: 512 });
+    const raw = await callStrategyModel({ system, user, ctx: opts.ctx, temperature: 0.2, maxTokens: 512 });
     const parsed = extractJson<{ kpi?: string; target?: string; deadline?: string; assumed?: boolean }>(raw, 'object');
     if (parsed?.kpi && parsed?.target) {
       const deadline = parsed.deadline ? ` by ${parsed.deadline}` : '';
@@ -184,8 +185,15 @@ async function reformulateGoal(opts: {
 export async function generateStrategy(input: GenerateStrategyInput): Promise<IStrategy> {
   const { brand, ctx } = await fetchBrandContext(input.brandId, input.orgId);
 
+  // The "brain" (system-prompt addenda, playbooks, grounding bands, model
+  // routing) resolves through the injectable provider — generic core wraps the
+  // existing static/own-data values; an overlay can bind a curated brain
+  // without changing any generation mechanism below.
+  const brain = resolveBrainProvider();
+  const brainCtx: BrainContext = { userId: input.userId, brandId: input.brandId };
+
   const brandName = (brand as { name?: string })?.name ?? 'Unknown Brand';
-  const systemPrompt = buildStrategySystemPrompt({
+  let systemPrompt = buildStrategySystemPrompt({
     brandName,
     brandVoice: ctx?.brandVoice ?? '',
     targetAudience: ctx?.targetAudience ?? '',
@@ -196,10 +204,15 @@ export async function generateStrategy(input: GenerateStrategyInput): Promise<IS
     personality: ctx?.personality ?? 'Expert',
   });
 
+  // Brain system-prompt addenda (generic core = none; overlay may add tuned
+  // operating instructions / certified guardrails).
+  const addenda = await brain.getSystemPromptAddenda(brainCtx);
+  if (addenda) systemPrompt = `${systemPrompt}\n\n${addenda}`;
+
   // Grounding inputs: the brand's connected-channel allowlist + benchmark bands.
   const connected = await getConnectedChannels(input.orgId, input.brandId);
   const connectedChannels = Array.from(connected.channels);
-  const benchmarkText = formatBandsForPrompt(connectedChannels);
+  const benchmarkText = brain.getGroundingBands({ channels: connectedChannels, industry: ctx?.industry ?? undefined });
   const brandSummary = buildBrandContextSummary(brandName, ctx);
 
   // §8 measurability reformulation gate — vague goal → measurable goal.
@@ -207,7 +220,7 @@ export async function generateStrategy(input: GenerateStrategyInput): Promise<IS
     rawGoal: input.goal,
     brandSummary,
     benchmarkText,
-    userId: input.userId,
+    ctx: brainCtx,
   });
 
   // Fetch parent strategy's iteration notes + prior validation if regenerating.
@@ -229,19 +242,12 @@ export async function generateStrategy(input: GenerateStrategyInput): Promise<IS
   });
 
   // Phase 3 (G9): ground generation in the brand's playbooks — distilled
-  // know-how + vertical starters from the Agent Workspace. Appended to the
-  // user prompt (not the cached system block).
-  try {
-    const { getPlaybookContext } = await import('@/lib/agent/workspace');
-    const playbooks = await getPlaybookContext({
-      userId: input.userId,
-      brandId: input.brandId,
-    });
-    if (playbooks) {
-      userPrompt += `\n\nPROVEN PLAYBOOKS for this brand (apply what fits the goal; prefer approaches that worked before):\n${playbooks}`;
-    }
-  } catch (playbookError) {
-    console.error('[Strategy] playbook context failed:', playbookError);
+  // know-how + vertical starters. Resolved through the brain (generic core =
+  // the Agent-Workspace Playbooks/; overlay may add curated packs). Appended to
+  // the user prompt (not the cached system block).
+  const playbooks = await brain.getPlaybooks(brainCtx);
+  if (playbooks) {
+    userPrompt += `\n\nPROVEN PLAYBOOKS for this brand (apply what fits the goal; prefer approaches that worked before):\n${playbooks}`;
   }
 
   // 1. Generate (Claude prompt-caches the system block automatically). 4096 —
@@ -249,7 +255,7 @@ export async function generateStrategy(input: GenerateStrategyInput): Promise<IS
   const raw = await callStrategyModel({
     system: systemPrompt,
     user: userPrompt,
-    userId: input.userId,
+    ctx: brainCtx,
     temperature: 0.3,
     maxTokens: 4096,
   });
@@ -271,7 +277,7 @@ export async function generateStrategy(input: GenerateStrategyInput): Promise<IS
       const repairUser =
         `The following strategy JSON has validation errors. Fix ONLY these issues and return the ` +
         `corrected JSON object with the same structure — no prose, no fences.\n\nERRORS:\n${errorIssueList(result)}\n\nSTRATEGY:\n${JSON.stringify(parsed)}`;
-      const repaired = await callStrategyModel({ system: systemPrompt, user: repairUser, userId: input.userId, temperature: 0.2 });
+      const repaired = await callStrategyModel({ system: systemPrompt, user: repairUser, ctx: brainCtx, temperature: 0.2 });
       parsed = extractJson<RawStrategyOutput>(repaired, 'object');
       repairAttempts += 1;
       result = validateStrategy(parsed, validateCtx);
@@ -284,7 +290,7 @@ export async function generateStrategy(input: GenerateStrategyInput): Promise<IS
   if (hasError(result)) {
     try {
       const regenUser = `${userPrompt}\n\nThe previous attempt failed these checks — avoid them:\n${errorIssueList(result)}`;
-      const regen = await callStrategyModel({ system: systemPrompt, user: regenUser, userId: input.userId, temperature: 0.3 });
+      const regen = await callStrategyModel({ system: systemPrompt, user: regenUser, ctx: brainCtx, temperature: 0.3 });
       parsed = extractJson<RawStrategyOutput>(regen, 'object');
       repairAttempts += 1;
       result = validateStrategy(parsed, validateCtx);
@@ -312,7 +318,7 @@ export async function generateStrategy(input: GenerateStrategyInput): Promise<IS
         const reviseUser =
           `Revise the strategy to resolve these must-fix items; keep everything else intact. ` +
           `Return the full corrected JSON object — no prose, no fences.\n\nMUST-FIX:\n${mustFix.map((m) => `- ${m}`).join('\n')}\n\nSTRATEGY:\n${JSON.stringify(parsed)}`;
-        const revised = await callStrategyModel({ system: systemPrompt, user: reviseUser, userId: input.userId, temperature: 0.3 });
+        const revised = await callStrategyModel({ system: systemPrompt, user: reviseUser, ctx: brainCtx, temperature: 0.3 });
         parsed = extractJson<RawStrategyOutput>(revised, 'object');
         reviseAttempts += 1;
         result = validateStrategy(parsed, validateCtx); // re-run cheap checks
@@ -393,10 +399,12 @@ export async function decomposeStrategy(
     cadence: (strategy.cadence ?? {}) as Record<string, number>,
   });
 
-  // Same task routing as generation — a hardcoded model here breaks the whole
-  // activate path whenever that one provider has no key configured.
-  const { AISettingsService } = await import('@/lib/services/ai-settings.service');
-  const pref = await AISettingsService.getPreferredModel(opts.userId, 'agentStrategy');
+  // Same task routing as generation — resolved through the brain so a hardcoded
+  // model never breaks the activate path and an overlay can tune it centrally.
+  const pref = await resolveBrainProvider().getPreferredModel(
+    { userId: opts.userId ?? '', brandId: opts.brandId },
+    'agentStrategy',
+  );
 
   const raw = await generateTextWithClient({
     model: pref.modelId,

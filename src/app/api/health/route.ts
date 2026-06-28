@@ -68,23 +68,30 @@ export async function GET() {
     let diskUsage: HealthStatus['services']['filesystem']['diskUsage'];
 
     try {
-        // Get disk usage for root partition
-        const { execSync } = await import('child_process');
-        const dfOutput = execSync('df -h / | tail -1').toString();
-        const parts = dfOutput.split(/\s+/);
+        // Cross-platform disk usage via fs.statfs (no shell-out; works on Linux,
+        // macOS, and Windows). The old `df -h /` always threw on Windows, which
+        // marked the whole app unhealthy (503) on any Windows dev box.
+        const root = process.platform === 'win32' ? process.cwd().split(/[\\/]/)[0] + '\\' : '/';
+        const stat = fs.statfsSync(root);
+        const total = stat.blocks * stat.bsize;
+        const free = stat.bavail * stat.bsize;
+        const used = total - free;
+        const fmtGb = (bytes: number) => `${(bytes / 1024 ** 3).toFixed(1)}G`;
+        const percentUsed = total > 0 ? Math.round((used / total) * 100) : 0;
 
         diskUsage = {
-            total: parts[1],
-            used: parts[2],
-            free: parts[3],
-            percentUsed: parseInt(parts[4].replace('%', ''))
+            total: fmtGb(total),
+            used: fmtGb(used),
+            free: fmtGb(free),
+            percentUsed,
         };
 
-        // Mark as degraded if disk usage > 80%
-        if (diskUsage.percentUsed > 80) {
-            filesystemStatus = 'down';
-        }
+        // High disk usage flows through the existing `degraded` path below
+        // (overall status, not a 503): a full-but-readable disk should not pull
+        // the container out of load-balancer rotation. `down` is reserved for a
+        // genuinely inaccessible filesystem (the catch).
     } catch (error) {
+        // Can't even stat the filesystem — that's a real liveness problem.
         console.error('Filesystem check failed:', error);
         filesystemStatus = 'down';
     }

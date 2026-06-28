@@ -2,9 +2,11 @@ name: CI
 
 # Public-repo CI for the MontrAI fair-code core.
 # Required pipeline (fail-fast, in order): lint → typecheck → test (vitest) →
-# secret-scan (gitleaks) → overlay-boundary guard. Any red job blocks merge.
-# NO deploy secrets live here — deployment is handled out-of-band
-# (see .github/workflows-disabled/deploy.yml on the private surface).
+# secret-scan (gitleaks) → overlay-boundary guard → license-header check. Any red
+# job blocks merge. These are the master-plan §3.6 HARD GATES the AI maintainer
+# enforces (see docs/MAINTAINER-AGENT.md). NO deploy secrets live here —
+# deployment is handled out-of-band (see .github/workflows-disabled/deploy.yml on
+# the private surface).
 
 on:
   pull_request:
@@ -113,33 +115,49 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history so the guard can diff the PR base..head range.
+          fetch-depth: 0
 
-      - name: Assert no commercial/overlay code in the public core
-        run: |
-          set -euo pipefail
-          fail=0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
-          # G5: the public core must never statically import an overlay/commercial path.
-          if grep -RInE "from ['\"](@overlay/|\.{1,}(/\.\.)*/overlay/|overlay/)" \
-               --include='*.ts' --include='*.tsx' --include='*.js' --include='*.mjs' \
-               src 2>/dev/null; then
-            echo "::error::Public core imports an overlay/commercial path — overlay-boundary guard (G5) failed."
-            fail=1
-          fi
+      # Fails the PR if it ADDS a file under a commercial/overlay path (the carve
+      # delete-manifest: (admin)/**, api/v2/admin/**, razorpay/**, white-label, …)
+      # or ADDS an import reaching into an overlay-only surface. Forbidden set lives
+      # in the script (self-contained — the emit pipeline scrubs the generator).
+      - name: Overlay-boundary guard (scripts/ci/overlay-boundary-check.mjs)
+        run: node scripts/ci/overlay-boundary-check.mjs
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
-          # The commercial overlay (ee/billing/gateway) is private — it must not
-          # appear in the public tree.
-          for d in ee overlay src/overlay packages/overlay; do
-            if [ -d "$d" ]; then
-              echo "::error::Commercial/overlay directory '$d' present in public tree — not allowed in the OSS core."
-              fail=1
-            fi
-          done
+  license-header:
+    name: License-header check (G6)
+    runs-on: ubuntu-latest
+    needs: overlay-boundary
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so the check can diff the PR base..head range.
+          fetch-depth: 0
 
-          if [ "$fail" -ne 0 ]; then
-            exit 1
-          fi
-          echo "Overlay-boundary guard passed — public core is clean."
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Fails the PR if any NEWLY ADDED source file under src/ is missing the
+      # fair-code SUL license header (CONTRIBUTING.md §4). Scoped to added files —
+      # never retroactively fails the pre-convention back-catalogue.
+      - name: License-header check (scripts/ci/license-header-check.mjs)
+        run: node scripts/ci/license-header-check.mjs
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
   e2e:
     name: E2E (Playwright)

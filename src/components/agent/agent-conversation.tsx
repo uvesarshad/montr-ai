@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CoreMessage } from 'ai';
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   BarChart3,
   Calendar,
@@ -14,10 +15,14 @@ import {
   ChevronRight,
   Copy,
   FileText,
+  Flag,
+  Layers,
   MessageSquare,
   MoreVertical,
   Paperclip,
+  Rocket,
   Search,
+  Send,
   Share2,
   Sparkles,
   Target,
@@ -29,14 +34,22 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import {
+  Button,
   IconButton,
   Chip,
+  Input,
   Spinner,
   Meter,
   Select,
   ChatBubble,
   MessageComposer,
 } from '@/components/ui-kit';
+import type {
+  StrategyArtifact,
+  StrategyDraftArtifact,
+  StrategyActivationArtifact,
+} from '@/lib/strategy/artifacts';
+import type { AgentMissionApproval } from '@/hooks/agent/use-agent-mission-context';
 import {
   AgentBrandOption,
   AgentStarterPrompt,
@@ -145,6 +158,16 @@ interface AgentConversationProps {
   activeBrand?: AgentBrandOption;
   userTurns: number;
   userInitials: string;
+  /** Sends a chat message through the existing composer/agent loop — used by the
+   *  strategy cards' Refine / Activate CTAs to iterate or activate a strategy. */
+  onSendMessage?: (text: string) => void;
+  /** Approve a HITL-gated PendingAgentAction (strategy activation roadmap sign-off). */
+  onApproveAction?: (pendingActionId: string) => void | Promise<void>;
+  /** Reject a HITL-gated PendingAgentAction. */
+  onRejectAction?: (pendingActionId: string) => void | Promise<void>;
+  /** Resolved status of pending actions (by id) so an activation card can show
+   *  the final state instead of stale Approve/Reject buttons after a refresh. */
+  approvalStatusById?: Record<string, AgentMissionApproval['status']>;
 }
 
 // Keep in sync with AGENT_DEFINITIONS (src/lib/agent/multi-agent/agent-definitions.ts)
@@ -188,6 +211,10 @@ export function AgentConversation({
   activeBrand,
   userTurns,
   userInitials,
+  onSendMessage,
+  onApproveAction,
+  onRejectAction,
+  approvalStatusById,
 }: AgentConversationProps) {
   const planSteps = useMemo(() => collectPlanSteps(events), [events]);
   const [planCollapsed, setPlanCollapsed] = useState(false);
@@ -370,6 +397,10 @@ export function AgentConversation({
               event={event}
               missionAgentId={mission?.activeAgentId}
               userInitials={userInitials}
+              onSendMessage={onSendMessage}
+              onApproveAction={onApproveAction}
+              onRejectAction={onRejectAction}
+              approvalStatusById={approvalStatusById}
             />
           ))}
 
@@ -588,14 +619,439 @@ function StatusLine({ icon: Icon, text, tone }: { icon: typeof AlertCircle; text
   );
 }
 
+// ── Strategy WOW cards ────────────────────────────────────────────────────
+// The strategy tools attach a typed `artifact` to their JSON result; the tool
+// registry persists that result (JSON-stringified) on the tool_result event's
+// metadata.resultFull. We parse it back out to render a live strategy card.
+
+function parseStrategyArtifact(event: AgentMissionEvent): StrategyArtifact | null {
+  const meta = event.metadata ?? {};
+  const raw =
+    typeof meta.resultFull === 'string'
+      ? meta.resultFull
+      : typeof meta.resultSummary === 'string'
+        ? meta.resultSummary
+        : typeof event.content === 'string'
+          ? event.content
+          : '';
+  // Cheap pre-checks before paying for JSON.parse on every tool result.
+  if (!raw || !raw.includes('"artifact"') || !raw.includes('strategy_')) return null;
+  try {
+    const parsed = JSON.parse(raw) as { artifact?: unknown };
+    const artifact = parsed?.artifact as StrategyArtifact | undefined;
+    if (artifact && (artifact.kind === 'strategy_draft' || artifact.kind === 'strategy_activation')) {
+      return artifact;
+    }
+  } catch {
+    // resultFull is capped at 50KB — strategy artifacts are tiny so they always
+    // fit; a parse failure just means this result isn't a strategy card.
+  }
+  return null;
+}
+
+function formatStrategyDeadline(iso: string): string {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+}
+
+function summarizeWeights(record?: Record<string, number>, suffix = ''): string {
+  if (!record) return '';
+  return Object.entries(record)
+    .map(([key, value]) => `${key} ${value}${suffix}`)
+    .join('  ·  ');
+}
+
+const VALIDATION_CHIP: Record<
+  StrategyDraftArtifact['validationStatus'],
+  { tone: 'ok' | 'warn' | 'danger'; label: string; icon: typeof CheckCircle2; ring: string; text: string }
+> = {
+  passed: { tone: 'ok', label: 'Validated', icon: CheckCircle2, ring: 'stroke-emerald-500', text: 'text-emerald-600' },
+  passed_with_warnings: { tone: 'warn', label: 'Passed with warnings', icon: AlertCircle, ring: 'stroke-amber-500', text: 'text-amber-600' },
+  failed: { tone: 'danger', label: 'Needs work', icon: XCircle, ring: 'stroke-rose-500', text: 'text-rose-600' },
+};
+
+function QualityRing({ score, status }: { score: number; status: StrategyDraftArtifact['validationStatus'] }) {
+  const clamped = Math.max(0, Math.min(100, Math.round(score)));
+  const radius = 22;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (clamped / 100) * circumference;
+  const palette = VALIDATION_CHIP[status] ?? VALIDATION_CHIP.passed_with_warnings;
+  return (
+    <div className="relative flex size-[60px] shrink-0 items-center justify-center">
+      <svg viewBox="0 0 56 56" className="size-[60px] -rotate-90">
+        <circle cx="28" cy="28" r={radius} fill="none" strokeWidth="5" className="stroke-black/[0.08] dark:stroke-white/10" />
+        <circle
+          cx="28"
+          cy="28"
+          r={radius}
+          fill="none"
+          strokeWidth="5"
+          strokeLinecap="round"
+          className={cn('transition-[stroke-dasharray] duration-700 ease-out', palette.ring)}
+          strokeDasharray={`${dash} ${circumference}`}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className={cn('text-[16px] font-bold leading-none', palette.text)}>{clamped}</span>
+        <span className="mt-px text-[7px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Quality</span>
+      </div>
+    </div>
+  );
+}
+
+function StrategyDraftCard({
+  artifact,
+  onSendMessage,
+}: {
+  artifact: StrategyDraftArtifact;
+  onSendMessage?: (text: string) => void;
+}) {
+  const [refineOpen, setRefineOpen] = useState(false);
+  const [refineText, setRefineText] = useState('');
+  const validation = VALIDATION_CHIP[artifact.validationStatus] ?? VALIDATION_CHIP.passed_with_warnings;
+  const cadenceSummary = summarizeWeights(artifact.cadence);
+  const contentMixSummary = summarizeWeights(artifact.contentMix);
+
+  const sendRefine = () => {
+    const constraints = refineText.trim();
+    const instruction = constraints
+      ? `Refine the "${artifact.name}" strategy (v${artifact.version}) with these changes: ${constraints}`
+      : `Refine the "${artifact.name}" strategy (v${artifact.version}) — tighten the plan and lift its quality score.`;
+    onSendMessage?.(instruction);
+    setRefineText('');
+    setRefineOpen(false);
+  };
+
+  const activate = () => {
+    onSendMessage?.(`Activate the "${artifact.name}" strategy (v${artifact.version}) and turn it into a roadmap of missions.`);
+  };
+
+  return (
+    <div className="ml-[38px] overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b border-border bg-black/[0.025] px-3.5 py-2 dark:bg-white/[0.025]">
+        <div className="flex size-[22px] items-center justify-center rounded-md bg-brand-muted text-brand-strong">
+          <Target className="size-3" />
+        </div>
+        <span className="text-[12px] font-semibold text-foreground">Strategy draft</span>
+        <span className="rounded bg-muted px-1.5 py-px text-[10px] font-semibold text-muted-foreground">v{artifact.version}</span>
+        {typeof artifact.parentVersion === 'number' && (
+          <span className="inline-flex items-center gap-1 rounded bg-brand-muted px-1.5 py-px text-[10px] font-semibold text-brand-strong">
+            <Wand2 className="size-2.5" />
+            v{artifact.parentVersion} → v{artifact.version}
+          </span>
+        )}
+        <Chip tone={validation.tone} icon={validation.icon} className="ml-auto h-[19px] text-[10px]">
+          {validation.label}
+        </Chip>
+      </div>
+
+      {/* Body */}
+      <div className="space-y-3 px-3.5 py-3">
+        {/* Identity + quality */}
+        <div className="flex items-start gap-3.5">
+          <QualityRing score={artifact.qualityScore} status={artifact.validationStatus} />
+          <div className="min-w-0 flex-1">
+            <div className="text-[13.5px] font-semibold leading-snug text-foreground">{artifact.name}</div>
+            {artifact.description && (
+              <p className="mt-0.5 line-clamp-3 text-[11.5px] leading-snug text-muted-foreground">{artifact.description}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Goals */}
+        {artifact.goals.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Goals</div>
+            {artifact.goals.map((goal, index) => (
+              <div key={`${goal.kpi}-${index}`} className="flex items-start gap-2 text-[12px]">
+                <Flag className="mt-[3px] size-3 shrink-0 text-brand-strong" />
+                <span className="text-foreground">
+                  <span className="font-semibold">{goal.kpi}</span>
+                  {goal.target && <span className="text-muted-foreground"> — {goal.target}</span>}
+                  {goal.deadline && (
+                    <span className="text-muted-foreground"> by {formatStrategyDeadline(goal.deadline)}</span>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Channels */}
+        {artifact.channels.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Channels</div>
+            <div className="flex flex-wrap gap-1.5">
+              {artifact.channels.map((channel) => (
+                <Chip key={channel} tone="gray" className="h-[20px] text-[10.5px]">
+                  {channel}
+                </Chip>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Cadence / content mix */}
+        {(cadenceSummary || contentMixSummary) && (
+          <div className="grid gap-1.5 rounded-lg bg-muted/50 px-2.5 py-2 text-[11px]">
+            {cadenceSummary && (
+              <div className="flex gap-2">
+                <span className="shrink-0 font-semibold text-muted-foreground">Cadence</span>
+                <span className="text-foreground">{cadenceSummary}</span>
+              </div>
+            )}
+            {contentMixSummary && (
+              <div className="flex gap-2">
+                <span className="shrink-0 font-semibold text-muted-foreground">Content mix</span>
+                <span className="text-foreground">{contentMixSummary}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Warnings (subtle) */}
+        {artifact.warnings.length > 0 && (
+          <div className="space-y-1 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-2.5 py-2">
+            {artifact.warnings.slice(0, 4).map((warning, index) => (
+              <div key={index} className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="mt-[2px] size-2.5 shrink-0" />
+                <span className="leading-snug">{warning}</span>
+              </div>
+            ))}
+            {artifact.warnings.length > 4 && (
+              <div className="pl-4 text-[10.5px] text-amber-700/80 dark:text-amber-400/80">
+                +{artifact.warnings.length - 4} more
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Refine inline composer */}
+        {refineOpen && (
+          <div className="flex items-center gap-1.5">
+            <Input
+              value={refineText}
+              onChange={(event) => setRefineText(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  sendRefine();
+                }
+              }}
+              placeholder="What should change? (e.g. add LinkedIn, weekly cadence)"
+              className="h-8 text-[12px]"
+              autoFocus
+            />
+            <IconButton
+              icon={Send}
+              iconSize={14}
+              aria-label="Send refinement"
+              onClick={sendRefine}
+              className="size-8 shrink-0 rounded-md border border-input bg-card"
+            />
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 pt-0.5">
+          <Button
+            variant="outline"
+            size="sm"
+            icon={Wand2}
+            onClick={() => setRefineOpen((prev) => !prev)}
+            disabled={!onSendMessage}
+          >
+            Refine
+          </Button>
+          <Button
+            variant="brand"
+            size="sm"
+            icon={Rocket}
+            onClick={activate}
+            disabled={!onSendMessage || !artifact.canActivate}
+            title={artifact.canActivate ? undefined : 'Resolve validation issues before activating'}
+          >
+            Activate
+          </Button>
+          {!artifact.canActivate && (
+            <span className="text-[10.5px] text-muted-foreground">Fix issues to activate</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StrategyActivationCard({
+  artifact,
+  onApproveAction,
+  onRejectAction,
+  resolvedStatus,
+}: {
+  artifact: StrategyActivationArtifact;
+  onApproveAction?: (pendingActionId: string) => void | Promise<void>;
+  onRejectAction?: (pendingActionId: string) => void | Promise<void>;
+  resolvedStatus?: AgentMissionApproval['status'];
+}) {
+  const [localState, setLocalState] = useState<'idle' | 'approving' | 'rejecting' | 'approved' | 'rejected'>('idle');
+  const { roadmap } = artifact;
+
+  // Server truth (from mission context) wins over local optimistic state once it
+  // catches up, so the card never shows stale Approve/Reject after a refresh.
+  const effectiveStatus: 'pending' | 'approved' | 'rejected' | 'expired' | 'busy' =
+    localState === 'approving' || localState === 'rejecting'
+      ? 'busy'
+      : resolvedStatus === 'approved' || localState === 'approved'
+        ? 'approved'
+        : resolvedStatus === 'rejected' || localState === 'rejected'
+          ? 'rejected'
+          : resolvedStatus === 'expired'
+            ? 'expired'
+            : 'pending';
+
+  const approve = async () => {
+    if (!onApproveAction) return;
+    setLocalState('approving');
+    try {
+      await onApproveAction(artifact.pendingActionId);
+      setLocalState('approved');
+    } catch {
+      setLocalState('idle');
+    }
+  };
+
+  const reject = async () => {
+    if (!onRejectAction) return;
+    setLocalState('rejecting');
+    try {
+      await onRejectAction(artifact.pendingActionId);
+      setLocalState('rejected');
+    } catch {
+      setLocalState('idle');
+    }
+  };
+
+  const headerTone =
+    effectiveStatus === 'approved' ? 'ok' : effectiveStatus === 'rejected' || effectiveStatus === 'expired' ? 'danger' : 'warn';
+
+  return (
+    <div className="ml-[38px] overflow-hidden rounded-xl border border-amber-500/30 bg-card shadow-sm">
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b border-border bg-amber-500/[0.06] px-3.5 py-2">
+        <div className="flex size-[22px] items-center justify-center rounded-md bg-brand-muted text-brand-strong">
+          <Rocket className="size-3" />
+        </div>
+        <span className="text-[12px] font-semibold text-foreground">Activate roadmap</span>
+        <Chip
+          tone={headerTone}
+          icon={effectiveStatus === 'approved' ? CheckCircle2 : effectiveStatus === 'rejected' ? XCircle : AlertCircle}
+          className="ml-auto h-[19px] text-[10px]"
+        >
+          {effectiveStatus === 'approved'
+            ? 'Approved'
+            : effectiveStatus === 'rejected'
+              ? 'Rejected'
+              : effectiveStatus === 'expired'
+                ? 'Expired'
+                : 'Approval needed'}
+        </Chip>
+      </div>
+
+      {/* Body */}
+      <div className="space-y-3 px-3.5 py-3">
+        {/* Roadmap stats */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'Entries', value: roadmap.totalEntries, icon: Layers, tone: 'text-foreground' },
+            { label: 'Start now', value: roadmap.willSpawn, icon: Rocket, tone: 'text-emerald-600' },
+            { label: 'Deferred', value: roadmap.deferred, icon: CalendarClock, tone: 'text-muted-foreground' },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded-lg bg-muted/50 px-2.5 py-2">
+              <div className="flex items-center gap-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                <stat.icon className="size-2.5" />
+                {stat.label}
+              </div>
+              <div className={cn('mt-0.5 text-[18px] font-bold leading-none', stat.tone)}>{stat.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* First missions preview */}
+        {roadmap.firstMissionTitles.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+              First missions
+            </div>
+            {roadmap.firstMissionTitles.map((title, index) => (
+              <div key={`${title}-${index}`} className="flex items-start gap-2 text-[12px]">
+                <span className="mt-[1px] flex size-[15px] shrink-0 items-center justify-center rounded-full bg-brand-muted text-[9px] font-bold text-brand-strong">
+                  {index + 1}
+                </span>
+                <span className="text-foreground">{title}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Outcome / actions */}
+        {effectiveStatus === 'approved' ? (
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/[0.07] px-2.5 py-2 text-[11.5px] font-medium text-emerald-700 dark:text-emerald-400">
+            <CheckCircle2 className="size-3.5" />
+            Roadmap activated — missions are starting.
+          </div>
+        ) : effectiveStatus === 'rejected' ? (
+          <div className="flex items-center gap-2 rounded-lg border border-rose-500/25 bg-rose-500/[0.07] px-2.5 py-2 text-[11.5px] font-medium text-rose-700 dark:text-rose-400">
+            <XCircle className="size-3.5" />
+            Activation rejected — the roadmap was not started.
+          </div>
+        ) : effectiveStatus === 'expired' ? (
+          <div className="text-[11.5px] text-muted-foreground">This approval has expired.</div>
+        ) : (
+          <div className="flex items-center gap-2 pt-0.5">
+            <Button
+              variant="brand"
+              size="sm"
+              icon={effectiveStatus === 'busy' && localState === 'approving' ? undefined : Check}
+              onClick={() => void approve()}
+              disabled={!onApproveAction || effectiveStatus === 'busy'}
+            >
+              {localState === 'approving' ? <Spinner size={13} /> : 'Approve'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={effectiveStatus === 'busy' && localState === 'rejecting' ? undefined : XCircle}
+              onClick={() => void reject()}
+              disabled={!onRejectAction || effectiveStatus === 'busy'}
+            >
+              {localState === 'rejecting' ? <Spinner size={13} /> : 'Reject'}
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function EventRow({
   event,
   missionAgentId,
   userInitials,
+  onSendMessage,
+  onApproveAction,
+  onRejectAction,
+  approvalStatusById,
 }: {
   event: AgentMissionEvent;
   missionAgentId?: string;
   userInitials: string;
+  onSendMessage?: (text: string) => void;
+  onApproveAction?: (pendingActionId: string) => void | Promise<void>;
+  onRejectAction?: (pendingActionId: string) => void | Promise<void>;
+  approvalStatusById?: Record<string, AgentMissionApproval['status']>;
 }) {
   if (event.type === 'message') {
     const isUser = event.role === 'user';
@@ -616,7 +1072,26 @@ function EventRow({
   }
 
   if (event.type === 'tool_call') return <ToolCallCard event={event} />;
-  if (event.type === 'tool_result') return <ToolResultCard event={event} />;
+  if (event.type === 'tool_result') {
+    // WOW bridge: a strategy tool result rides a structured `artifact` on its
+    // JSON payload — switch on artifact.kind to render a rich live card instead
+    // of the generic tool-result excerpt.
+    const artifact = parseStrategyArtifact(event);
+    if (artifact?.kind === 'strategy_draft') {
+      return <StrategyDraftCard artifact={artifact} onSendMessage={onSendMessage} />;
+    }
+    if (artifact?.kind === 'strategy_activation') {
+      return (
+        <StrategyActivationCard
+          artifact={artifact}
+          onApproveAction={onApproveAction}
+          onRejectAction={onRejectAction}
+          resolvedStatus={approvalStatusById?.[artifact.pendingActionId]}
+        />
+      );
+    }
+    return <ToolResultCard event={event} />;
+  }
   if (event.type === 'artifact_created') return <ArtifactCard event={event} />;
   if (event.type === 'approval_request') {
     const meta = event.metadata ?? {};

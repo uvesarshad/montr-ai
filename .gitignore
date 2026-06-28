@@ -62,3 +62,4 @@ docs/.obsidian/
 # Large voice ML model (lazy-downloaded + sha256-verified at runtime; prefetch
 # with `npm run download-voice-models`). Tokenizer + small assets ARE committed.
 src/lib/voice/ai/turn/models/model_q8.onnx
+test-results/

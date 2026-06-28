@@ -368,18 +368,54 @@ export function OnboardingFlow({
     await runPlanGeneration(message, formData);
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    // The selected goal id (e.g. 'sales') → its human title; this is the seed the
+    // agent reformulates into a measurable KPI inside generate_strategy.
+    const goalTitle = GOALS.find((g) => g.id === goal)?.title;
+    const businessName = formData.businessName || formData.websiteAnalysis?.businessName || 'my business';
+    const businessType = formData.businessType || formData.websiteAnalysis?.businessType || '';
+    const industry = formData.industry || formData.websiteAnalysis?.industry || '';
+    const audience = formData.targetAudience || formData.websiteAnalysis?.targetAudience || '';
+    const channelNames = PLATFORMS.filter((p) => platforms.includes(p.id)).map((p) => p.name);
+
+    const goalLine = goalTitle ? goalTitle.toLowerCase() : 'grow the business';
+    const contextLines = [
+      `Business: ${businessName}${businessType ? ` (${businessType})` : ''}`,
+      industry ? `Industry: ${industry}` : '',
+      audience ? `Target audience: ${audience}` : '',
+      formData.website ? `Website: ${formData.website}` : '',
+      channelNames.length ? `Channels: ${channelNames.join(', ')}` : '',
+    ].filter(Boolean).join('\n');
+
+    const prompt =
+      `My main marketing goal is to ${goalLine}. ` +
+      `Use the generate_strategy tool now to turn this into a data-driven strategy draft ` +
+      `(measurable goals/KPIs, channel mix, content mix and cadence), then show me the draft so I can review and activate it.`;
+
+    // Resolve the brand to pin the agent to. Normally the onboarded brandId is
+    // present; fall back to the user's current/first brand so the strategy tools
+    // always have a brand context (fixes the brandId/asset-bridge no-op).
+    let targetBrandId = brandId;
+    if (!targetBrandId) {
+      try {
+        const res = await fetch('/api/social/brands');
+        const payload = res.ok ? await res.json() : null;
+        const list = Array.isArray(payload?.brands) ? payload.brands : Array.isArray(payload) ? payload : [];
+        targetBrandId = list[0]?.id || list[0]?._id || '';
+      } catch {
+        // Non-fatal — the agent will prompt for a brand if it cannot resolve one.
+      }
+    }
+
     openAgentLauncher({
-      prompt: 'My marketing roadmap is ready. Show me what to work on first.',
+      prompt,
+      brandId: targetBrandId || undefined,
       context: {
         source: 'marketing_onboarding',
         entityType: 'onboarding',
-        entityLabel: formData.businessName || 'Brand onboarding',
+        entityLabel: businessName,
         route: '/dashboard',
-        notes: [
-          formData.website ? `Website: ${formData.website}` : '',
-          formData.goals?.length ? `Goals: ${formData.goals.join(', ')}` : '',
-        ].filter((note): note is string => Boolean(note)),
+        notes: contextLines ? contextLines.split('\n') : [],
       },
     });
     onComplete();
@@ -412,7 +448,7 @@ export function OnboardingFlow({
       return;
     }
     if (step === 4) {
-      handleFinish();
+      await handleFinish();
       return;
     }
     setStep((s) => s + 1);

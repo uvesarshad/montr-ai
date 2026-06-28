@@ -95,6 +95,14 @@ docker compose up
 Then open **http://localhost:3000**, create your owner account, and you're in — **one workspace, every
 feature unlocked**, no plans, no billing, no org picker.
 
+> **Prefer a prebuilt image?** Every tagged release publishes to the GitHub Container Registry, so you can
+> skip the local build:
+> ```bash
+> docker pull ghcr.io/uvesarshad/montr-ai:latest
+> ```
+> Pin a specific version with `:v1.2.0` instead of `:latest`. Point `docker-compose.yml`'s `web`/`worker`
+> `image:` at this tag (and drop the `build:` block) to run the registry image directly.
+
 **What spins up:**
 
 | Service | Image | Role |

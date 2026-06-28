@@ -12,7 +12,7 @@ import { userRepository } from '@/lib/db/repository/user.repository';
 import { planRepository } from '@/lib/db/repository/plan.repository';
 import { ApiKeys } from '@/ai/types';
 
-import { AISettingsService } from '@/lib/services/ai-settings.service';
+import { resolveBrainProvider, type BrainContext } from '@/lib/agent/brain';
 import { compactConversation } from '@/lib/agent/compaction-engine';
 import {
     routeToAgentWithLLM,
@@ -114,10 +114,13 @@ async function prepareMissionTurnContext({ message, brandId, missionId, history 
         }
     }
 
-    // Look up preferred model for the 'copilotAgent' task via AISettingsService.
-    // An explicit user/system choice wins; otherwise the plan tier's defaultModel
-    // applies (super-admin configurable per plan) — never a hardcoded model.
-    const aiPreference = await AISettingsService.getPreferredModel(userId, 'copilotAgent');
+    // The agent "brain" (model routing + system-prompt addenda) resolves through
+    // the injectable provider. Generic core wraps AISettingsService (user/system
+    // choice wins, else the plan tier's defaultModel — never hardcoded); an
+    // overlay can bind a curated brain without touching this loop.
+    const brain = resolveBrainProvider();
+    const brainCtx: BrainContext = { userId, brandId };
+    const aiPreference = await brain.getPreferredModel(brainCtx, 'copilotAgent');
     const model = aiPreference.source === 'fallback'
         ? gate.defaultModel
         : (aiPreference.modelId || gate.defaultModel);
@@ -303,7 +306,10 @@ Use reportBlocked when you genuinely cannot proceed without user input. Do not u
     const disambigNote = routeResult.needsDisambiguation && routeResult.disambiguationMessage
         ? `\n\n## Routing note\nYou were assigned because the user's intent is ambiguous. Your FIRST response MUST be the following clarification message (verbatim):\n\n"${routeResult.disambiguationMessage}"\n\nDo not execute any tools until the user has clarified.`
         : '';
-    const fullSystemPrompt = `${basePrompt}${missionModeNote}${disambigNote}\n\n## Active Specialist: ${selectedAgent.emoji} ${selectedAgent.name}\n${selectedAgent.systemPromptAddition}`;
+    // Brain system-prompt addenda (generic core = none; an overlay may append
+    // tuned operating instructions / certified guardrails).
+    const brainAddenda = await brain.getSystemPromptAddenda(brainCtx);
+    const fullSystemPrompt = `${basePrompt}${missionModeNote}${disambigNote}\n\n## Active Specialist: ${selectedAgent.emoji} ${selectedAgent.name}\n${selectedAgent.systemPromptAddition}${brainAddenda ? `\n\n${brainAddenda}` : ''}`;
 
     // Update session
     await updateSession(userId, brandId, [{ role: 'user', content: message }], selectedAgent.id);
