@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: SEE LICENSE IN LICENSE.md
+// MontrAI — fair-code, licensed under the n8n Sustainable Use License (SUL). © Cloud Fold Studio.
 /**
  * Client-safe telemetry policy constants + types.
  *
