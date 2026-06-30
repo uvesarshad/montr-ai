@@ -165,6 +165,7 @@ export function Rail() {
                 return (
                   <Link
                     key={item.href}
+                    id={`rail-item${item.href.replace(/\//g, '-')}`}
                     href={item.href}
                     title={item.label}
                     target={item.href.startsWith('/admin') ? '_blank' : undefined}
@@ -215,6 +216,7 @@ export function Rail() {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
+              id="rail-account"
               aria-label="Account"
               className="flex h-[54px] w-full shrink-0 items-center border-t border-white/10 text-left transition-colors hover:bg-white/5"
             >

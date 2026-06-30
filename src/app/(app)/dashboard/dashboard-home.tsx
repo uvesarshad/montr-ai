@@ -1,12 +1,12 @@
 ﻿'use client';
 
 /**
- * Dashboard Home — pixel-match of the mockup (the v0.6 design mockup (removed) 
- * dashboard.jsx), composed entirely from the ui-kit. Every data section is
- * prop-driven and falls back to sample data when a prop is omitted; page.tsx
- * wires the real hooks. The finance hero stays sample (2026-06-03 decision),
- * EXCEPT the spend stat: once ad accounts sync real spend, the "Total spend"
- * row becomes live "Ads spend" (useAdsSpend) — sample otherwise.
+ * Dashboard Home — composed entirely from the ui-kit. Every data section is
+ * prop-driven by page.tsx's real hooks; absent/empty values resolve to honest
+ * zeros + empty states (NO fabricated "sample" data — 2026-06-30). The hero shows
+ * REAL metrics only: open pipeline + stage breakdown (CRM), closed-won (CRM), ads
+ * spend (useAdsSpend, when ad accounts are synced), AI credits used, and the real
+ * plan. There is no fabricated revenue / "net saved" / demo team.
  */
 
 import * as React from 'react';
@@ -16,7 +16,6 @@ import {
   Bot,
   Building2,
   Check,
-  ChevronDown,
   ChevronRight,
   DollarSign,
   FileText,
@@ -48,8 +47,8 @@ import {
   Card,
   Chip,
   Donut,
+  EmptyState,
   KpiTile,
-  Spark,
   StatCard,
 } from '@/components/ui-kit';
 
@@ -80,64 +79,14 @@ export interface DashboardHomeData {
   socialStats?: { impressions: string; engagements: string; ctr: string; published: string };
   scheduledPosts?: ScheduledPost[];
   inbox?: InboxRow[];
+  teamNames?: string[];
+  activitySeries?: { name: string; color: string; data: number[] }[];
+  activityLabels?: { x: number; t: string }[];
   onGo?: (href: string) => void;
   onAskAI?: () => void;
   onLaunchAgent?: () => void;
 }
 
-const SAMPLE = {
-  kpis: { pipeline: '$486k', won: '$112k', conversations: '46', credits: '64.2k' },
-  creditSegments: [
-    { value: 28400, color: 'hsl(var(--brand))', label: 'AI Studio' },
-    { value: 15300, color: 'hsl(var(--brand-strong))', label: 'AI Agent' },
-    { value: 9800, color: 'hsl(var(--info-h))', label: 'AI Bots' },
-    { value: 6900, color: 'hsl(var(--success))', label: 'Automation' },
-    { value: 3800, color: 'hsl(var(--warning))', label: 'Email + WhatsApp' },
-  ],
-  creditsLeftLabel: '35.8k',
-  creditPlan: 'Scale',
-  resetsLabel: 'monthly',
-  agentTasks: [
-    { status: 'RUNNING', tone: 'brand' as const, title: 'Create Q2 social content plan', tags: 'AI Studio · Social', pct: 62 },
-    { status: 'READY', tone: 'ok' as const, title: 'Audit CRM pipeline follow-ups', tags: 'Automation · CRM', pct: 38 },
-    { status: 'QUEUED', tone: 'gray' as const, title: 'Draft next WhatsApp campaign', tags: 'Marketing · WhatsApp', pct: 0 },
-  ] as AgentTask[],
-  agentSummary: { running: 2, queued: 1 },
-  crmPipeline: [
-    { name: 'Lead', total: 54, color: 'hsl(var(--muted-foreground))' },
-    { name: 'Qualified', total: 114, color: 'hsl(var(--info-h))' },
-    { name: 'Proposal', total: 139, color: 'hsl(var(--brand-strong))' },
-    { name: 'Negotiation', total: 157, color: 'hsl(var(--brand))' },
-    { name: 'Closed Won', total: 112, color: 'hsl(var(--success))' },
-  ] as PipelineRow[],
-  crmOpenLabel: '$486k open',
-  crmDealsLabel: '38 deals',
-  automations: [
-    { title: 'New lead → enrich → assign', active: true, runs: '1.2k' },
-    { title: 'Trial day 3 → email sequence', active: true, runs: '840' },
-    { title: 'Deal won → onboarding tasks', active: true, runs: '312' },
-    { title: 'Churn risk → notify CSM', active: false, runs: '—' },
-  ] as AutomationRow[],
-  automationsSummary: { active: 18, paused: 6 },
-  docsAndForms: [
-    { title: 'AI-Flow Repository', sub: 'Edited 2d ago', badge: 'Shared', tone: 'purple' as const },
-    { title: 'Meeting Notes', sub: 'Edited 5d ago', badge: 'Private', tone: 'gray' as const },
-    { title: 'form 234', sub: '12 responses', badge: null, tone: null },
-    { title: 'Untitled Form', sub: 'Draft', badge: null, tone: null },
-  ] as DocFormRow[],
-  docsFormsSummary: '5 docs · 5 forms',
-  socialStats: { impressions: '12.4k', engagements: '1,820', ctr: '2.4%', published: '38' },
-  scheduledPosts: [
-    { title: 'LinkedIn — Launch teaser', date: 'Mar 13' },
-    { title: 'X — Feature thread', date: 'Mar 17' },
-  ] as ScheduledPost[],
-  inbox: [
-    { name: 'Marcus Bauer', preview: "Sounds great — let's book it", time: '2m', channel: 'whatsapp' as const },
-    { name: 'Priya Nair', preview: 'Re: onboarding next steps', time: '18m', channel: 'email' as const },
-    { name: 'Sofia Almeida', preview: 'Commented on your post', time: '1h', channel: 'social' as const },
-    { name: 'Daniel Okafor', preview: 'Question about SSO', time: '2h', channel: 'email' as const },
-  ] as InboxRow[],
-};
 
 const CHANNEL_ICON: Record<InboxRow['channel'], LucideIcon> = {
   whatsapp: MessageCircle,
@@ -147,79 +96,50 @@ const CHANNEL_ICON: Record<InboxRow['channel'], LucideIcon> = {
 
 /* ------------------------------------------------------------ finance hero */
 
-const HERO_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const HERO_BARS = [
-  { pipeline: 30, won: 14, activity: 20 },
-  { pipeline: 38, won: 18, activity: 24 },
-  { pipeline: 34, won: 16, activity: 22 },
-  { pipeline: 58, won: 30, activity: 34 },
-  { pipeline: 42, won: 20, activity: 26 },
-  { pipeline: 48, won: 24, activity: 30 },
-  { pipeline: 36, won: 17, activity: 23 },
-];
-const HERO_SERIES: { key: 'pipeline' | 'won' | 'activity'; label: string; color: string }[] = [
-  { key: 'pipeline', label: 'Pipeline', color: 'hsl(var(--brand))' },
-  { key: 'won', label: 'Closed', color: 'hsl(var(--success))' },
-  { key: 'activity', label: 'Activity', color: 'hsl(var(--warning))' },
-];
-
-function BalanceOverview() {
-  const [sel, setSel] = React.useState(3);
-  const totals = HERO_BARS.map((b) => b.pipeline + b.won + b.activity);
-  const maxT = Math.max(...totals);
+/**
+ * Open-pipeline overview, backed by REAL CRM stage data (no fabricated revenue).
+ * Shows the live open-pipeline value + a per-stage bar breakdown; on a fresh
+ * tenant with no deals it renders an empty state rather than sample numbers.
+ */
+function BalanceOverview({ openValue, dealsLabel, stages }: { openValue: string; dealsLabel?: string; stages: PipelineRow[] }) {
   const H = 168;
+  const hasData = stages.some((s) => s.total > 0);
+  const maxT = Math.max(...stages.map((s) => s.total), 1);
   return (
     <Card>
       <div className="flex items-start justify-between px-[18px] pb-1.5 pt-4">
         <div>
           <div className="flex items-baseline gap-2.5">
-            <span className="text-[30px] font-semibold tracking-[-0.035em]">
-              $486<span className="text-muted-foreground">k</span>
-            </span>
-            <span className="inline-flex items-center gap-0.5 text-[12.5px] font-semibold text-success">
-              <ArrowUp className="size-3" />
-              12.4%
-            </span>
+            <span className="text-[30px] font-semibold tracking-[-0.035em]">{openValue}</span>
           </div>
-          <div className="mt-0.5 text-[12.5px] text-muted-foreground">Revenue overview · this week</div>
+          <div className="mt-0.5 text-[12.5px] text-muted-foreground">
+            Open pipeline{dealsLabel ? ` · ${dealsLabel}` : ' · by stage'}
+          </div>
         </div>
-        <Button size="sm" iconRight={ChevronDown}>
-          7d
+        <Button size="sm" iconRight={ChevronRight} onClick={undefined}>
+          CRM
         </Button>
       </div>
-      <div className="flex gap-4 px-[18px] pb-2">
-        {HERO_SERIES.map((s) => (
-          <span key={s.key} className="flex items-center gap-1.5 text-xs">
-            <span className="h-[9px] w-[9px] rounded-[3px]" style={{ background: s.color }} />
-            <span className="font-medium text-muted-foreground">{s.label}</span>
-          </span>
-        ))}
-      </div>
-      <div className="flex items-end gap-2 px-[18px] pb-4" style={{ height: H + 38 }}>
-        {HERO_BARS.map((b, i) => {
-          const isSel = i === sel;
-          return (
-            <button key={HERO_DAYS[i]} type="button" onClick={() => setSel(i)} className="flex flex-1 flex-col items-center gap-1.5">
+      {hasData ? (
+        <div className="flex items-end gap-2 px-[18px] pb-4" style={{ height: H + 38 }}>
+          {stages.map((s) => (
+            <div key={s.name} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
               <div className="flex w-full flex-col justify-end" style={{ height: H }}>
-                {HERO_SERIES.map((s, si) => (
-                  <span
-                    key={s.key}
-                    style={{
-                      height: `${(b[s.key] / maxT) * H}px`,
-                      background: s.color,
-                      borderRadius: si === 0 ? '5px 5px 0 0' : 0,
-                      opacity: isSel ? 1 : 0.32,
-                    }}
-                  />
-                ))}
+                <span style={{ height: `${(s.total / maxT) * H}px`, background: s.color, borderRadius: '5px 5px 0 0' }} />
               </div>
-              <span className={cn('text-[11px]', isSel ? 'font-semibold text-foreground' : 'text-muted-foreground')}>
-                {HERO_DAYS[i]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+              <span className="w-full truncate text-center text-[11px] font-semibold text-foreground">{s.total}</span>
+              <span className="w-full truncate text-center text-[10.5px] text-muted-foreground">{s.name}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          icon={TrendingUp}
+          title="No deals yet"
+          note="Add deals in CRM and your open-pipeline overview appears here."
+          className="px-[18px] py-12"
+        />
+      )}
     </Card>
   );
 }
@@ -267,38 +187,40 @@ function useAdsSpend() {
   return spend;
 }
 
-function StatStack() {
+/** Real platform money stats — closed-won (CRM), ads spend (when connected),
+ *  and AI credits used. No fabricated revenue / "net saved". */
+function StatStack({ wonValue, creditsUsedLabel }: { wonValue: string; creditsUsedLabel: string }) {
   const adsSpend = useAdsSpend();
-  const stats = [
-    { label: 'Total revenue', value: '$15,000', delta: '+5.1%', up: true },
+  const stats: { label: string; value: string; sub: React.ReactNode; up?: boolean }[] = [
+    { label: 'Closed won', value: wonValue, sub: <span className="font-normal text-muted-foreground">from your CRM</span> },
     adsSpend
-      ? { label: 'Ads spend', value: adsSpend.value, delta: adsSpend.delta, up: adsSpend.up }
-      : { label: 'Total spend', value: '$6,700', delta: '+1.5%', up: false },
-    { label: 'Net saved', value: '$8,300', delta: '+20.7%', up: true },
+      ? {
+          label: 'Ads spend · 30d',
+          value: adsSpend.value,
+          up: adsSpend.up,
+          sub: <>{adsSpend.delta} <span className="font-normal text-muted-foreground">vs prior 30d</span></>,
+        }
+      : { label: 'Ads spend', value: '—', sub: <span className="font-normal text-muted-foreground">connect ad accounts</span> },
+    { label: 'AI credits used', value: creditsUsedLabel, sub: <span className="font-normal text-muted-foreground">this period</span> },
   ];
   return (
     // Mockup `.hero-stats` — 4px/18px padding, no dividers between stats.
     <Card className="justify-center px-[18px] py-1">
       <div>
         {stats.map((s) => (
-          <StatCard
-            key={s.label}
-            label={s.label}
-            value={s.value}
-            up={s.up}
-            delta={
-              <>
-                {s.delta} <span className="font-normal text-muted-foreground">from last month</span>
-              </>
-            }
-          />
+          <StatCard key={s.label} label={s.label} value={s.value} up={s.up} delta={s.sub} />
         ))}
       </div>
     </Card>
   );
 }
 
-function PlanCard({ plan = 'Scale', workspace = 'Your workspace' }: { plan?: string; workspace?: string }) {
+function PlanCard({
+  plan = 'Free',
+  workspace = 'Your workspace',
+  team = [],
+  renewsLabel,
+}: { plan?: string; workspace?: string; team?: string[]; renewsLabel?: string }) {
   // Mockup `.plan-actions` — five tiles, each with a 30px icon square on top.
   const actions: [LucideIcon, string][] = [
     [ArrowUp, 'Upgrade'],
@@ -307,7 +229,6 @@ function PlanCard({ plan = 'Scale', workspace = 'Your workspace' }: { plan?: str
     [Activity, 'Usage'],
     [MoreHorizontal, 'More'],
   ];
-  const team = ['Maya Chen', 'Devin Park', 'Lucia Romano', 'Tomás Vidal', 'Alex Carter'];
   return (
     // Mockup `.hero-plan-wrap` — a transparent stack, NOT a card.
     <div className="flex flex-col justify-center gap-3">
@@ -329,16 +250,17 @@ function PlanCard({ plan = 'Scale', workspace = 'Your workspace' }: { plan?: str
             ACTIVE
           </span>
         </div>
-        <div className="mt-5 font-mono text-[16px] font-medium tracking-[0.12em]">•••• •••• •••• 7890</div>
-        <div className="mt-4 flex items-end justify-between">
+        <div className="mt-5 flex items-end justify-between">
           <div>
             <div className="text-[10px] uppercase tracking-[0.06em] opacity-70">Workspace</div>
             <div className="text-[13px] font-semibold">{workspace}</div>
           </div>
-          <div className="text-right">
-            <div className="text-[10px] uppercase tracking-[0.06em] opacity-70">Renews</div>
-            <div className="font-mono text-[13px] font-semibold">06 / 26</div>
-          </div>
+          {renewsLabel ? (
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-[0.06em] opacity-70">Renews</div>
+              <div className="font-mono text-[13px] font-semibold">{renewsLabel}</div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -360,14 +282,18 @@ function PlanCard({ plan = 'Scale', workspace = 'Your workspace' }: { plan?: str
 
       {/* team row */}
       <div className="mt-0.5 flex items-center gap-2">
-        <span className="text-[12.5px] font-medium text-muted-foreground">Your team</span>
-        <div className="flex">
-          {team.map((t, i) => (
-            <span key={t} className="rounded-full ring-2 ring-card" style={{ marginLeft: i ? -8 : 0, zIndex: team.length - i }}>
-              <Avatar name={t} size={26} />
-            </span>
-          ))}
-        </div>
+        <span className="text-[12.5px] font-medium text-muted-foreground">
+          {team.length ? 'Your team' : 'Invite your team'}
+        </span>
+        {team.length ? (
+          <div className="flex">
+            {team.slice(0, 5).map((t, i) => (
+              <span key={t} className="rounded-full ring-2 ring-card" style={{ marginLeft: i ? -8 : 0, zIndex: team.length - i }}>
+                <Avatar name={t} size={26} />
+              </span>
+            ))}
+          </div>
+        ) : null}
         <button
           type="button"
           className="ml-auto grid size-6 place-items-center rounded-full border border-dashed border-input text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -461,11 +387,11 @@ function OnboardingChecklist({ onGo }: { onGo: (href: string) => void }) {
 
 /* --------------------------------------------------------------- KPI tiles */
 
-const KPI_TILES: { key: 'pipeline' | 'won' | 'conversations' | 'credits'; icon: LucideIcon; label: string; pastel: 'violet' | 'mint' | 'blue' | 'peach'; tone: string; delta: string; up: boolean; spark: number[] }[] = [
-  { key: 'pipeline', icon: TrendingUp, label: 'Open pipeline', pastel: 'violet', tone: 'hsl(var(--brand))', delta: '+12.4%', up: true, spark: [38, 41, 40, 45, 44, 49, 52, 50, 55, 58, 62, 64] },
-  { key: 'won', icon: DollarSign, label: 'Closed won · MTD', pastel: 'mint', tone: 'hsl(var(--success))', delta: '+8.1%', up: true, spark: [20, 22, 21, 28, 30, 29, 35, 40, 44, 52, 60, 62] },
-  { key: 'conversations', icon: Inbox, label: 'Open conversations', pastel: 'blue', tone: 'hsl(var(--info-h))', delta: '+9', up: true, spark: [30, 34, 33, 38, 36, 42, 40, 44, 41, 46, 44, 46] },
-  { key: 'credits', icon: Zap, label: 'AI credits used', pastel: 'peach', tone: 'hsl(var(--brand-strong))', delta: '64%', up: false, spark: [5, 12, 18, 24, 29, 33, 38, 45, 50, 56, 60, 64] },
+const KPI_TILES: { key: 'pipeline' | 'won' | 'conversations' | 'credits'; icon: LucideIcon; label: string; pastel: 'violet' | 'mint' | 'blue' | 'peach' }[] = [
+  { key: 'pipeline', icon: TrendingUp, label: 'Open pipeline', pastel: 'violet' },
+  { key: 'won', icon: DollarSign, label: 'Closed won · MTD', pastel: 'mint' },
+  { key: 'conversations', icon: Inbox, label: 'Open conversations', pastel: 'blue' },
+  { key: 'credits', icon: Zap, label: 'AI credits used', pastel: 'peach' },
 ];
 
 /* --------------------------------------------------------------- module bits */
@@ -519,7 +445,7 @@ function AiStudioCard({ go }: { go: (href: string) => void }) {
       action={<CardLink label="Open" onClick={() => go('/ai-studio')} />}
       footer={
         <>
-          <span>128 generations</span>
+          <span>Text · Image · Video · Audio</span>
           <CardLink label="Open Studio" onClick={() => go('/ai-studio')} />
         </>
       }
@@ -568,18 +494,22 @@ function AutomationsCard({
         </>
       }
     >
-      <div>
-        {automations.slice(0, 4).map((a, i) => (
-          <ListRow key={a.title} first={i === 0}>
-            <Workflow className="size-4 shrink-0 text-brand" />
-            <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium">{a.title}</span>
-            <span className="font-mono text-[11px] text-muted-foreground">{a.runs}</span>
-            <Chip tone={a.active ? 'ok' : 'warn'} className="h-[19px] text-[10.5px]">
-              {a.active ? 'Active' : 'Paused'}
-            </Chip>
-          </ListRow>
-        ))}
-      </div>
+      {automations.length ? (
+        <div>
+          {automations.slice(0, 4).map((a, i) => (
+            <ListRow key={a.title} first={i === 0}>
+              <Workflow className="size-4 shrink-0 text-brand" />
+              <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium">{a.title}</span>
+              <span className="font-mono text-[11px] text-muted-foreground">{a.runs}</span>
+              <Chip tone={a.active ? 'ok' : 'warn'} className="h-[19px] text-[10.5px]">
+                {a.active ? 'Active' : 'Paused'}
+              </Chip>
+            </ListRow>
+          ))}
+        </div>
+      ) : (
+        <EmptyState icon={Workflow} title="No automations yet" note="Build a workflow on the canvas to automate your busywork." className="px-4 py-7" />
+      )}
     </Card>
   );
 }
@@ -600,26 +530,30 @@ function InboxCard({ inbox, go }: { inbox: InboxRow[]; go: (href: string) => voi
         </>
       }
     >
-      <div>
-        {inbox.slice(0, 4).map((c, i) => {
-          const Icon = CHANNEL_ICON[c.channel];
-          return (
-            <ListRow key={c.name} first={i === 0}>
-              <Avatar name={c.name} size={28} />
-              <span className="min-w-0 flex-1">
-                <span className="block text-[12.5px] font-semibold">{c.name}</span>
-                <span className="block truncate text-[11.5px] text-muted-foreground">{c.preview}</span>
-              </span>
-              <span className="flex flex-col items-end gap-1">
-                <span className="text-[10.5px] text-muted-foreground">{c.time}</span>
-                <span className="grid size-4 place-items-center rounded bg-muted text-muted-foreground">
-                  <Icon className="size-2.5" />
+      {inbox.length ? (
+        <div>
+          {inbox.slice(0, 4).map((c, i) => {
+            const Icon = CHANNEL_ICON[c.channel];
+            return (
+              <ListRow key={c.name} first={i === 0}>
+                <Avatar name={c.name} size={28} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12.5px] font-semibold">{c.name}</span>
+                  <span className="block truncate text-[11.5px] text-muted-foreground">{c.preview}</span>
                 </span>
-              </span>
-            </ListRow>
-          );
-        })}
-      </div>
+                <span className="flex flex-col items-end gap-1">
+                  <span className="text-[10.5px] text-muted-foreground">{c.time}</span>
+                  <span className="grid size-4 place-items-center rounded bg-muted text-muted-foreground">
+                    <Icon className="size-2.5" />
+                  </span>
+                </span>
+              </ListRow>
+            );
+          })}
+        </div>
+      ) : (
+        <EmptyState icon={Inbox} title="Inbox is quiet" note="Connect a channel and new conversations land here." className="px-4 py-7" />
+      )}
     </Card>
   );
 }
@@ -648,24 +582,28 @@ function DocsFormsCard({
         </>
       }
     >
-      <div>
-        {docsAndForms.slice(0, 4).map((r, i) => (
-          <ListRow key={`${r.title}-${i}`} first={i === 0}>
-            <span className="grid size-7 shrink-0 place-items-center rounded-[7px] bg-muted text-muted-foreground">
-              <FileText className="h-[15px] w-[15px]" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[12.5px] font-semibold">{r.title}</span>
-              <span className="text-[11px] text-muted-foreground">{r.sub}</span>
-            </span>
-            {r.tone && r.badge ? (
-              <Chip tone={r.tone} className="h-[19px] text-[10.5px]">
-                {r.badge}
-              </Chip>
-            ) : null}
-          </ListRow>
-        ))}
-      </div>
+      {docsAndForms.length ? (
+        <div>
+          {docsAndForms.slice(0, 4).map((r, i) => (
+            <ListRow key={`${r.title}-${i}`} first={i === 0}>
+              <span className="grid size-7 shrink-0 place-items-center rounded-[7px] bg-muted text-muted-foreground">
+                <FileText className="h-[15px] w-[15px]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12.5px] font-semibold">{r.title}</span>
+                <span className="text-[11px] text-muted-foreground">{r.sub}</span>
+              </span>
+              {r.tone && r.badge ? (
+                <Chip tone={r.tone} className="h-[19px] text-[10.5px]">
+                  {r.badge}
+                </Chip>
+              ) : null}
+            </ListRow>
+          ))}
+        </div>
+      ) : (
+        <EmptyState icon={FileText} title="Nothing here yet" note="Create a doc or build a form to get started." className="px-4 py-7" />
+      )}
     </Card>
   );
 }
@@ -673,36 +611,33 @@ function DocsFormsCard({
 /* -------------------------------------------------------------------- Home */
 
 export function DashboardHome(props: DashboardHomeData) {
+  // Real data only — every field is fed by the page's live hooks. Absent/empty
+  // values resolve to honest zeros/empty states (no fabricated "demo" data).
   const go = props.onGo ?? (() => { });
-  const kpis = props.kpis ?? SAMPLE.kpis;
-  const creditSegments = props.creditSegments?.length ? props.creditSegments : SAMPLE.creditSegments;
-  const creditsLeft = props.creditsLeftLabel ?? SAMPLE.creditsLeftLabel;
-  const creditPlan = props.creditPlan ?? SAMPLE.creditPlan;
-  const resetsLabel = props.resetsLabel ?? SAMPLE.resetsLabel;
-  const agentTasks = props.agentTasks?.length ? props.agentTasks : SAMPLE.agentTasks;
-  const agentSummary = props.agentSummary ?? SAMPLE.agentSummary;
-  const crmPipeline = props.crmPipeline?.length ? props.crmPipeline : SAMPLE.crmPipeline;
-  const crmOpenLabel = props.crmOpenLabel ?? SAMPLE.crmOpenLabel;
-  const crmDealsLabel = props.crmDealsLabel ?? SAMPLE.crmDealsLabel;
-  const automations = props.automations?.length ? props.automations : SAMPLE.automations;
-  const automationsSummary = props.automationsSummary ?? SAMPLE.automationsSummary;
-  const docsAndForms = props.docsAndForms?.length ? props.docsAndForms : SAMPLE.docsAndForms;
-  const docsFormsSummary = props.docsFormsSummary ?? SAMPLE.docsFormsSummary;
-  const socialStats = props.socialStats ?? SAMPLE.socialStats;
-  const scheduledPosts = props.scheduledPosts?.length ? props.scheduledPosts : SAMPLE.scheduledPosts;
-  const inbox = props.inbox?.length ? props.inbox : SAMPLE.inbox;
+  const kpis = props.kpis ?? { pipeline: '$0', won: '$0', conversations: '—', credits: '—' };
+  const creditSegments = props.creditSegments ?? [];
+  const creditsLeft = props.creditsLeftLabel ?? '—';
+  const creditPlan = props.creditPlan ?? 'Free';
+  const resetsLabel = props.resetsLabel ?? '—';
+  const agentTasks = props.agentTasks ?? [];
+  const agentSummary = props.agentSummary ?? { running: 0, queued: 0 };
+  const crmPipeline = props.crmPipeline ?? [];
+  const crmOpenLabel = props.crmOpenLabel ?? '$0 open';
+  const crmDealsLabel = props.crmDealsLabel ?? 'No deals yet';
+  const automations = props.automations ?? [];
+  const automationsSummary = props.automationsSummary ?? { active: 0, paused: 0 };
+  const docsAndForms = props.docsAndForms ?? [];
+  const docsFormsSummary = props.docsFormsSummary ?? '0 docs · 0 forms';
+  const socialStats = props.socialStats;
+  const scheduledPosts = props.scheduledPosts ?? [];
+  const inbox = props.inbox ?? [];
 
   const maxStage = Math.max(...crmPipeline.map((s) => s.total), 1);
+  const openPipelineValue = crmOpenLabel.replace(/\s*open\s*$/i, '');
 
-  const activitySeries = [
-    { name: 'Conversations', color: 'hsl(var(--brand))', data: [42, 48, 40, 55, 60, 52, 68, 72, 65, 80, 76, 88, 84, 96] },
-    { name: 'AI generations', color: 'hsl(var(--brand-strong))', data: [20, 26, 30, 28, 38, 44, 40, 52, 58, 54, 66, 62, 70, 78] },
-  ];
-  const xlabels = [
-    { x: 0, t: 'May 16' },
-    { x: 0.5, t: 'May 23' },
-    { x: 1, t: 'May 29' },
-  ];
+  const activitySeries = props.activitySeries ?? [];
+  const xlabels = props.activityLabels ?? [];
+  const hasActivity = activitySeries.some((s) => s.data.some((v) => v > 0));
 
   return (
     <div className="flex flex-col gap-[14px] px-6 pb-9 pt-5">
@@ -729,21 +664,17 @@ export function DashboardHome(props: DashboardHomeData) {
       {/* onboarding checklist */}
       <OnboardingChecklist onGo={go} />
 
-      {/* finance hero */}
+      {/* hero */}
       <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-[1.85fr_0.9fr_1.15fr]">
-        <BalanceOverview />
-        <StatStack />
-        <PlanCard plan={creditPlan} />
+        <BalanceOverview openValue={openPipelineValue} dealsLabel={crmDealsLabel} stages={crmPipeline} />
+        <StatStack wonValue={kpis.won} creditsUsedLabel={kpis.credits} />
+        <PlanCard plan={creditPlan} renewsLabel={resetsLabel !== '—' ? resetsLabel : undefined} team={props.teamNames ?? []} />
       </div>
 
       {/* KPI tiles */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {KPI_TILES.map((t) => (
-          <KpiTile key={t.key} icon={t.icon} label={t.label} value={kpis[t.key]} delta={t.delta} up={t.up} pastel={t.pastel}>
-            <div className="mt-1.5">
-              <Spark data={t.spark} color={t.tone} />
-            </div>
-          </KpiTile>
+          <KpiTile key={t.key} icon={t.icon} label={t.label} value={kpis[t.key]} pastel={t.pastel} />
         ))}
       </div>
 
@@ -753,9 +684,9 @@ export function DashboardHome(props: DashboardHomeData) {
           icon={Activity}
           title="Workspace activity"
           meta="last 14 days"
-          action={<CardLink label="Details" />}
+          action={hasActivity ? <CardLink label="Details" /> : undefined}
           footer={
-            <>
+            hasActivity ? (
               <span className="flex items-center gap-4">
                 {activitySeries.map((s) => (
                   <span key={s.name} className="flex items-center gap-1.5">
@@ -764,13 +695,21 @@ export function DashboardHome(props: DashboardHomeData) {
                   </span>
                 ))}
               </span>
-              <span className="font-mono text-muted-foreground">+18% vs prior</span>
-            </>
+            ) : undefined
           }
         >
-          <div className="min-h-[180px] px-3.5 pt-2">
-            <AreaChart series={activitySeries} labels={xlabels} />
-          </div>
+          {hasActivity ? (
+            <div className="min-h-[180px] px-3.5 pt-2">
+              <AreaChart series={activitySeries} labels={xlabels} />
+            </div>
+          ) : (
+            <EmptyState
+              icon={Activity}
+              title="No activity yet"
+              note="Conversations and AI generations will chart here as your workspace gets busy."
+              className="min-h-[180px] px-4 py-10"
+            />
+          )}
         </Card>
 
         <Card
@@ -786,26 +725,35 @@ export function DashboardHome(props: DashboardHomeData) {
             </>
           }
         >
-          <div className="flex items-center gap-4 px-4 py-3.5">
-            <div className="relative shrink-0">
-              <Donut segments={creditSegments} />
-              <div className="absolute inset-0 grid place-items-center text-center">
-                <div>
-                  <div className="font-mono text-xl font-semibold tracking-[-0.02em]">{creditsLeft}</div>
-                  <div className="text-[10.5px] text-muted-foreground">left</div>
+          {creditSegments.length ? (
+            <div className="flex items-center gap-4 px-4 py-3.5">
+              <div className="relative shrink-0">
+                <Donut segments={creditSegments} />
+                <div className="absolute inset-0 grid place-items-center text-center">
+                  <div>
+                    <div className="font-mono text-xl font-semibold tracking-[-0.02em]">{creditsLeft}</div>
+                    <div className="text-[10.5px] text-muted-foreground">left</div>
+                  </div>
                 </div>
               </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                {creditSegments.map((b) => (
+                  <div key={b.label} className="flex items-center gap-2 text-xs">
+                    <span className="size-2 shrink-0 rounded-[2px]" style={{ background: b.color }} />
+                    <span className="truncate text-muted-foreground">{b.label}</span>
+                    <span className="ml-auto font-mono font-semibold">{(b.value / 1000).toFixed(1)}k</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              {creditSegments.map((b) => (
-                <div key={b.label} className="flex items-center gap-2 text-xs">
-                  <span className="size-2 shrink-0 rounded-[2px]" style={{ background: b.color }} />
-                  <span className="truncate text-muted-foreground">{b.label}</span>
-                  <span className="ml-auto font-mono font-semibold">{(b.value / 1000).toFixed(1)}k</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          ) : (
+            <EmptyState
+              icon={Zap}
+              title="No usage yet"
+              note="Your AI credit usage by feature appears here once you start creating."
+              className="px-4 py-8"
+            />
+          )}
         </Card>
       </div>
 
@@ -822,23 +770,32 @@ export function DashboardHome(props: DashboardHomeData) {
           <span className="ml-auto" />
           <CardLink label="View all" onClick={() => go('/agent')} />
         </div>
-        <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          {agentTasks.slice(0, 3).map((a) => (
-            <div key={a.title} className="px-4 py-3">
-              <div className="flex items-center justify-between">
-                <Chip tone={a.tone} className="h-[19px] text-[10.5px]">
-                  {a.status}
-                </Chip>
-                <span className="font-mono text-[11px] text-muted-foreground">{a.pct ? `${a.pct}%` : '—'}</span>
+        {agentTasks.length ? (
+          <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            {agentTasks.slice(0, 3).map((a) => (
+              <div key={a.title} className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <Chip tone={a.tone} className="h-[19px] text-[10.5px]">
+                    {a.status}
+                  </Chip>
+                  <span className="font-mono text-[11px] text-muted-foreground">{a.pct ? `${a.pct}%` : '—'}</span>
+                </div>
+                <div className="mb-1 mt-2.5 line-clamp-1 text-[13.5px] font-semibold leading-snug">{a.title}</div>
+                <div className="mb-2.5 text-[11.5px] text-muted-foreground">{a.tags}</div>
+                <span className="block h-[5px] overflow-hidden rounded-[4px] bg-muted">
+                  <span className="block h-full rounded-[4px] bg-brand" style={{ width: `${a.pct}%` }} />
+                </span>
               </div>
-              <div className="mb-1 mt-2.5 line-clamp-1 text-[13.5px] font-semibold leading-snug">{a.title}</div>
-              <div className="mb-2.5 text-[11.5px] text-muted-foreground">{a.tags}</div>
-              <span className="block h-[5px] overflow-hidden rounded-[4px] bg-muted">
-                <span className="block h-full rounded-[4px] bg-brand" style={{ width: `${a.pct}%` }} />
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Bot}
+            title="No missions running"
+            note="Launch the agent with a goal and active missions show up here."
+            className="py-9"
+          />
+        )}
       </Card>
 
       {/* module bird's-eye — row A */}
@@ -857,20 +814,24 @@ export function DashboardHome(props: DashboardHomeData) {
             </>
           }
         >
-          <div className="px-4 pb-1.5 pt-3">
-            <div className="mb-2.5 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Sales pipeline</div>
-            <div className="flex flex-col gap-2.5">
-              {crmPipeline.map((s) => (
-                <div key={s.name} className="flex items-center gap-2.5 text-xs">
-                  <span className="w-[74px] truncate text-muted-foreground">{s.name}</span>
-                  <span className="h-[7px] flex-1 overflow-hidden rounded-[4px] bg-muted">
-                    <span className="block h-full rounded-[4px]" style={{ width: `${(s.total / maxStage) * 100}%`, background: s.color }} />
-                  </span>
-                  <span className="w-[52px] text-right font-mono font-semibold">{s.total ? `$${s.total}k` : '—'}</span>
-                </div>
-              ))}
+          {crmPipeline.length ? (
+            <div className="px-4 pb-1.5 pt-3">
+              <div className="mb-2.5 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">Sales pipeline</div>
+              <div className="flex flex-col gap-2.5">
+                {crmPipeline.map((s) => (
+                  <div key={s.name} className="flex items-center gap-2.5 text-xs">
+                    <span className="w-[74px] truncate text-muted-foreground">{s.name}</span>
+                    <span className="h-[7px] flex-1 overflow-hidden rounded-[4px] bg-muted">
+                      <span className="block h-full rounded-[4px]" style={{ width: `${(s.total / maxStage) * 100}%`, background: s.color }} />
+                    </span>
+                    <span className="w-[52px] text-right font-mono font-semibold">{s.total ? s.total : '—'}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <EmptyState icon={TrendingUp} title="No deals yet" note="Add contacts and deals to see your pipeline." className="px-4 py-7" />
+          )}
         </Card>
 
         <Card
@@ -882,26 +843,28 @@ export function DashboardHome(props: DashboardHomeData) {
           action={<CardLink label="Calendar" onClick={() => go('/social')} />}
           footer={
             <>
-              <span>4 active accounts</span>
+              <span>{scheduledPosts.length ? `${scheduledPosts.length} scheduled` : 'Plan your first post'}</span>
               <CardLink label="Create post" onClick={() => go('/social/create-post')} />
             </>
           }
         >
-          <div className="grid grid-cols-2 gap-px bg-border">
-            {[
-              ['Impressions', socialStats.impressions, '+6%'],
-              ['Engagements', socialStats.engagements, '+11%'],
-              ['Avg. CTR', socialStats.ctr, '+0.3'],
-              ['Published', socialStats.published, '7d'],
-            ].map((s) => (
-              <div key={s[0]} className="bg-card px-3.5 py-2.5">
-                <div className="text-[19px] font-semibold tracking-[-0.02em]">{s[1]}</div>
-                <div className="text-[11.5px] text-muted-foreground">
-                  {s[0]} <span className="text-success">{s[2]}</span>
+          {socialStats ? (
+            <div className="grid grid-cols-2 gap-px bg-border">
+              {[
+                ['Impressions', socialStats.impressions],
+                ['Engagements', socialStats.engagements],
+                ['Avg. CTR', socialStats.ctr],
+                ['Published', socialStats.published],
+              ].map((s) => (
+                <div key={s[0]} className="bg-card px-3.5 py-2.5">
+                  <div className="text-[19px] font-semibold tracking-[-0.02em]">{s[1]}</div>
+                  <div className="text-[11.5px] text-muted-foreground">{s[0]}</div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState icon={Share2} title="No social data yet" note="Connect a channel and publish to see reach + engagement." className="px-4 py-7" />
+          )}
           {scheduledPosts.slice(0, 2).map((p, i) => (
             <ListRow key={p.title} first={i === 0}>
               <span className="h-6 w-[3px] rounded-[3px] bg-brand" />

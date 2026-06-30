@@ -1,188 +1,118 @@
 "use client";
 
 import { useEffect } from "react";
-import { driver } from "driver.js";
+import { usePathname } from "next/navigation";
+import { driver, type DriveStep } from "driver.js";
 import "driver.js/dist/driver.css";
 import { useSession } from '@/lib/auth-client';
 
+// First-run product tour. Anchored to the persistent Rail (left nav) — the only
+// chrome that's present on every authenticated page — so it never points at a
+// missing element. It auto-starts ONCE, only on /dashboard (the natural "home"
+// first screen), so it never dims/interrupts the agent goal→strategy hand-off.
+const TOUR_STEPS: DriveStep[] = [
+    {
+        element: "#rail-item-dashboard",
+        popover: {
+            title: "Your command center",
+            description: "The dashboard rolls up activity, stats, and recent work across every module.",
+            side: "right",
+            align: "center",
+        },
+    },
+    {
+        element: "#rail-item-agent",
+        popover: {
+            title: "Meet your AI agent",
+            description: "Give it a goal in plain English. It plans a strategy, drafts the work, and executes across your whole stack — with you approving the big moves.",
+            side: "right",
+            align: "center",
+        },
+    },
+    {
+        element: "#rail-item-canvas",
+        popover: {
+            title: "Automation",
+            description: "Build no-code workflows on a visual canvas that run on autopilot.",
+            side: "right",
+            align: "center",
+        },
+    },
+    {
+        element: "#rail-item-crm",
+        popover: {
+            title: "CRM",
+            description: "Track contacts, companies, and deals in one pipeline.",
+            side: "right",
+            align: "center",
+        },
+    },
+    {
+        element: "#rail-item-inbox",
+        popover: {
+            title: "Unified inbox",
+            description: "Every conversation — email, WhatsApp, social — in one place.",
+            side: "right",
+            align: "center",
+        },
+    },
+    {
+        element: "#rail-item-social",
+        popover: {
+            title: "Social",
+            description: "Plan, schedule, and analyze posts across all your channels.",
+            side: "right",
+            align: "center",
+        },
+    },
+    {
+        element: "#rail-item-docs",
+        popover: {
+            title: "Docs & content",
+            description: "Write, collaborate, and keep your knowledge base in one workspace.",
+            side: "right",
+            align: "center",
+        },
+    },
+    {
+        element: "#rail-account",
+        popover: {
+            title: "Your account",
+            description: "Profile, settings, billing, and theme live here. That's the tour — dive in!",
+            side: "right",
+            align: "start",
+        },
+    },
+];
+
 export function TourGuide() {
     const { status } = useSession();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (status !== "authenticated") return;
+        // Only auto-start from the dashboard "home" — never on /agent (would dim the
+        // goal→strategy hand-off) or any deep module page.
+        if (pathname !== "/dashboard") return;
+        if (localStorage.getItem("hasSeenTour")) return;
 
-        const hasSeenTour = localStorage.getItem("hasSeenTour");
-        if (hasSeenTour) return;
+        // Resilience: only keep steps whose target is actually in the DOM, so the
+        // tour can never render a centered popover over a dimmed page pointing at
+        // nothing (e.g. after a shell refactor renames/removes an anchor).
+        const steps = TOUR_STEPS.filter(
+            (step) => typeof step.element === "string" && document.querySelector(step.element),
+        );
+        if (steps.length < 2) {
+            // Not enough of the UI is mounted yet (e.g. mobile, where the Rail is
+            // hidden). Don't burn the one-shot flag — try again next dashboard visit.
+            return;
+        }
 
         const driverObj = driver({
             showProgress: true,
             allowClose: true,
-            popoverClass: 'driverjs-theme',
-            steps: [
-                {
-                    element: "#sidebar-item-dashboard",
-                    popover: {
-                        title: "Dashboard",
-                        description: "Get an overview of your activities, stats, and recent updates.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#sidebar-item-automation",
-                    popover: {
-                        title: "Automation",
-                        description: "Manage your canvases and build automation flows.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#sidebar-item-inbox",
-                    popover: {
-                        title: "Inbox",
-                        description: "Centralized inbox for all your communications and chats.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#sidebar-item-social",
-                    popover: {
-                        title: "Social Media",
-                        description: "Plan, schedule, and analyze your social media posts.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#sidebar-item-crm",
-                    popover: {
-                        title: "CRM",
-                        description: "Manage relationships with your contacts, companies, and deals.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#sidebar-item-marketing",
-                    popover: {
-                        title: "Marketing",
-                        description: "Run email campaigns and manage WhatsApp marketing.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#sidebar-item-ai-studio",
-                    popover: {
-                        title: "AI Studio",
-                        description: "Generate content using advanced AI tools for text, image, video, and more.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#sidebar-item-docs",
-                    popover: {
-                        title: "Docs",
-                        description: "Create and collaborate on documents within the platform.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#sidebar-item-forms",
-                    popover: {
-                        title: "Forms",
-                        description: "Build and manage forms to collect data.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                // New Sidebar Steps
-                {
-                    element: "#create-canvas-btn",
-                    popover: {
-                        title: "Create Canvas",
-                        description: "Quickly create a new whiteboard canvas directly from the sidebar.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#credit-meter",
-                    popover: {
-                        title: "Credit Meter",
-                        description: "Monitor your usage and available credits.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#sidebar-theme-toggle",
-                    popover: {
-                        title: "Theme Toggle",
-                        description: "Switch between light and dark modes.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#sidebar-item-settings",
-                    popover: {
-                        title: "Settings",
-                        description: "Configure your workspace and preferences.",
-                        side: "right",
-                        align: "center",
-                    },
-                },
-                // Header Steps
-                {
-                    element: "#header-create-btn",
-                    popover: {
-                        title: "Quick Create",
-                        description: "Create new Canvases, Documents, Posts, or Contacts from anywhere.",
-                        side: "bottom",
-                        align: "center",
-                        onNextClick: () => {
-                            // Close the dropdown before moving on
-                            const btn = document.querySelector("#header-create-btn") as HTMLElement;
-                            if (btn && btn.getAttribute("aria-expanded") === "true") {
-                                btn.click();
-                            }
-                            driverObj.moveNext();
-                        }
-                    },
-                    onHighlightStarted: (element) => {
-                        // Automatically open the dropdown when highlighted
-                        // Use a slight delay to ensure the UI is ready
-                        setTimeout(() => {
-                            if (element && (element as HTMLElement).getAttribute("aria-expanded") !== "true") {
-                                (element as HTMLElement).click();
-                            }
-                        }, 300);
-                    }
-                },
-                {
-                    element: "#header-search",
-                    popover: {
-                        title: "Search",
-                        description: "Quickly find anything across the platform.",
-                        side: "bottom",
-                        align: "center",
-                    },
-                },
-                {
-                    element: "#user-menu",
-                    popover: {
-                        title: "Profile & Settings",
-                        description: "Access your profile, settings, and billing information.",
-                        side: "left",
-                        align: "start",
-                    },
-                },
-            ],
+            popoverClass: "driverjs-theme",
+            steps,
             onDestroyStarted: () => {
                 driverObj.destroy();
                 localStorage.setItem("hasSeenTour", "true");
@@ -193,8 +123,8 @@ export function TourGuide() {
 
         return () => {
             driverObj.destroy();
-        }
-    }, [status]);
+        };
+    }, [status, pathname]);
 
     return null;
 }
