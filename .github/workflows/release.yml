@@ -111,7 +111,9 @@ jobs:
           # GitHub-hosted runners cache layers between runs via the GHA cache.
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # If you hit the ~7 GB OOM described above and can't move to a larger
-          # runner, uncomment to cap the builder heap below the runner ceiling:
-          # build-args: |
-          #   EXTRA_NODE_OPTIONS=--max-old-space-size=6144
+          # Cap the builder heap below the ~7 GB runner ceiling (the Dockerfile
+          # defaults to 8192, which OOMs on a standard GitHub runner). The LAST
+          # --max-old-space-size wins, so this caps it at ~6 GB. If next build
+          # still OOMs at 6 GB, move `runs-on` to a larger runner instead.
+          build-args: |
+            EXTRA_NODE_OPTIONS=--max-old-space-size=6144
