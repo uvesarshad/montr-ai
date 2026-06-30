@@ -15,7 +15,7 @@ import { ShieldCheck, Check, X, Code2 } from 'lucide-react';
 import {
     TELEMETRY_COLLECTED,
     TELEMETRY_NEVER_COLLECTED,
-} from '@/lib/telemetry/flywheel';
+} from '@/lib/telemetry/policy';
 
 /** A representative coarsened payload for the radical-transparency "see the payload" link. */
 const SAMPLE_PAYLOAD = {
