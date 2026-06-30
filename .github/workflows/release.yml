@@ -67,6 +67,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # The image keeps full node_modules in both the builder and runtime stages
+      # (typescript is needed at runtime for next.config.ts), so the multi-stage
+      # build + .next + BuildKit cache can exceed the runner's ~14 GB free disk
+      # ("No space left on device"). Reclaim ~25 GB of preinstalled tooling we
+      # don't use before building. Plain rm (no third-party action) by design.
+      - name: Free up runner disk
+        run: |
+          echo "Before:"; df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/lib/android /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo docker image prune -af || true
+          echo "After:"; df -h / | tail -1
+
       # buildx = the BuildKit-backed builder build-push-action drives.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
