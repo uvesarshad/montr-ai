@@ -68,8 +68,11 @@ describe('VariableResolver — simple scope resolution', () => {
   });
 
   it('resolves system variables (and the sys alias)', () => {
-    const r = new VariableResolver(makeContext());
-    expect(r.evaluateExpression('system.organization')).toBe('org1');
+    // organizationId and the owner (userId) coincide here so `system.organization`
+    // resolves to the same value in both the multi-tenant build (returns the org)
+    // and the single-tenant OSS build (where the org field is owner-scoped to userId).
+    const r = new VariableResolver(makeContext({ organizationId: 'acct1', userId: 'acct1' }));
+    expect(r.evaluateExpression('system.organization')).toBe('acct1');
     expect(r.evaluateExpression('sys.workflowId')).toBe('wf1');
   });
 

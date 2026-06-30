@@ -51,9 +51,19 @@ function isPrivateIPv6(ip: string): boolean {
   if (lower.startsWith('fe80:')) return true; // link-local
   if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // unique local
   if (lower.startsWith('ff')) return true; // multicast
-  // IPv4-mapped IPv6: ::ffff:a.b.c.d
+  // IPv4-mapped IPv6, dotted form: ::ffff:a.b.c.d
   const v4mapped = lower.match(/^::ffff:([0-9.]+)$/);
   if (v4mapped && isPrivateIPv4(v4mapped[1])) return true;
+  // IPv4-mapped IPv6, hex form: ::ffff:HHHH:HHHH — Node's URL parser normalizes
+  // ::ffff:127.0.0.1 to ::ffff:7f00:1, so we must decode the embedded IPv4 here
+  // too or it bypasses the block.
+  const v4mappedHex = lower.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (v4mappedHex) {
+    const hi = parseInt(v4mappedHex[1], 16);
+    const lo = parseInt(v4mappedHex[2], 16);
+    const v4 = `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
+    if (isPrivateIPv4(v4)) return true;
+  }
   return false;
 }
 
@@ -84,10 +94,15 @@ export async function assertSafeOutboundUrl(rawUrl: string): Promise<void> {
     throw new Error(`Outbound host "${hostname}" is blocked.`);
   }
 
-  // If the host is already a literal IP, validate it directly.
-  if (net.isIP(hostname)) {
-    if (isPrivateAddress(hostname)) {
-      throw new Error(`Outbound IP "${hostname}" is in a blocked range.`);
+  // If the host is already a literal IP, validate it directly. IPv6 literals
+  // arrive bracketed from URL.hostname (e.g. "[::1]"); strip the brackets so
+  // net.isIP recognizes them and we classify the literal in-process instead of
+  // doing a pointless, environment-fragile DNS lookup on the bracketed string
+  // (which fails with ENOTFOUND on hosts without IPv6, e.g. CI runners).
+  const ipLiteral = hostname.replace(/^\[|\]$/g, '');
+  if (net.isIP(ipLiteral)) {
+    if (isPrivateAddress(ipLiteral)) {
+      throw new Error(`Outbound IP "${ipLiteral}" is in a blocked range.`);
     }
     return;
   }
@@ -117,7 +132,9 @@ export async function assertSafeOutboundUrl(rawUrl: string): Promise<void> {
  * them directly without DNS substitution).
  */
 async function resolveSafeIp(hostname: string): Promise<{ ip: string; family: 4 | 6 } | null> {
-    if (net.isIP(hostname)) return null;
+    // Bracketed IPv6 literals ("[::1]") are still literals — recognize them so we
+    // don't DNS-resolve a literal (the caller dials it directly).
+    if (net.isIP(hostname.replace(/^\[|\]$/g, ''))) return null;
     const addresses = await dns.lookup(hostname, { all: true, verbatim: true });
     for (const { address } of addresses) {
         if (isPrivateAddress(address)) {
